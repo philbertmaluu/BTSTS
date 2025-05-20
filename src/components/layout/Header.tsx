@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sun, Moon, User, LogOut, Settings } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
-import { Basketball } from '../icons/Basketball';
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, Sun, Moon, User, LogOut, Settings } from "lucide-react";
+import { Button } from "../ui/Button";
+import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 
 export const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -19,8 +18,8 @@ export const Header: React.FC = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -29,35 +28,38 @@ export const Header: React.FC = () => {
   }, [location]);
 
   const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Matches', path: '/matches' },
-    { name: 'Players', path: '/players' },
-    { name: 'Teams', path: '/teams' },
-    { name: 'News', path: '/news' },
+    { name: "Home", path: "/" },
+    { name: "Matches", path: "/matches" },
+    { name: "Players", path: "/players" },
+    { name: "Teams", path: "/teams" },
+    { name: "News", path: "/news" },
   ];
 
   // Add protected routes based on user role
   if (user) {
-    if (user.role === 'admin') {
-      navItems.push({ name: 'Admin', path: '/admin' });
+    if (user.role === "admin") {
+      navItems.push({ name: "Admin", path: "/admin" });
     }
-    if (user.role === 'statistician') {
-      navItems.push({ name: 'Stats', path: '/stats' });
+    if (user.role === "statistician") {
+      navItems.push({ name: "Stats", path: "/stats" });
     }
-    if (user.role === 'coach') {
-      navItems.push({ name: 'Coach', path: '/coach' });
+    if (user.role === "coach") {
+      navItems.push({ name: "Coach", path: "/coach" });
     }
   }
 
   const headerClasses = `
     fixed top-0 left-0 right-0 z-50 transition-all duration-300
-    ${isScrolled 
-      ? 'bg-white dark:bg-neutral-900 shadow-md py-2' 
-      : 'bg-transparent py-4'}
+    ${
+      isScrolled
+        ? "bg-white dark:bg-neutral-900 shadow-md py-2"
+        : "bg-transparent py-4"
+    }
   `;
 
-  const activeNavClass = 'text-primary-500 dark:text-primary-400 font-semibold';
-  const inactiveNavClass = 'text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-400';
+  const activeNavClass = "text-primary-500 dark:text-primary-400 font-semibold";
+  const inactiveNavClass =
+    "text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-400";
 
   return (
     <header className={headerClasses}>
@@ -65,7 +67,11 @@ export const Header: React.FC = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <Basketball className="h-8 w-8 text-primary-500" />
+            <img
+              src="/icons/icons8-basketball-100.png"
+              alt="HoopStats Logo"
+              className="h-8 w-8"
+            />
             <span className="text-xl font-display font-bold text-neutral-900 dark:text-white">
               HoopStats
             </span>
@@ -79,7 +85,11 @@ export const Header: React.FC = () => {
                 to={item.path}
                 className={`
                   text-sm font-medium transition-colors
-                  ${location.pathname === item.path ? activeNavClass : inactiveNavClass}
+                  ${
+                    location.pathname === item.path
+                      ? activeNavClass
+                      : inactiveNavClass
+                  }
                 `}
               >
                 {item.name}
@@ -94,9 +104,13 @@ export const Header: React.FC = () => {
               onClick={toggleTheme}
               className="p-2 rounded-full text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               whileTap={{ scale: 0.9 }}
-              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              aria-label={
+                theme === "dark"
+                  ? "Switch to light theme"
+                  : "Switch to dark theme"
+              }
             >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </motion.button>
 
             {/* Auth buttons or user menu */}
@@ -125,15 +139,21 @@ export const Header: React.FC = () => {
 
                 {/* Dropdown menu */}
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                  <Link to="/profile" className="flex items-center px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                  <Link
+                    to="/profile"
+                    className="flex items-center px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                  >
                     <User size={16} className="mr-2" />
                     Profile
                   </Link>
-                  <Link to="/settings" className="flex items-center px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                  <Link
+                    to="/settings"
+                    className="flex items-center px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                  >
                     <Settings size={16} className="mr-2" />
                     Settings
                   </Link>
-                  <button 
+                  <button
                     onClick={logout}
                     className="w-full text-left flex items-center px-4 py-2 text-sm text-error-600 dark:text-error-400 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   >
@@ -145,7 +165,9 @@ export const Header: React.FC = () => {
             ) : (
               <div className="hidden md:flex items-center space-x-2">
                 <Link to="/login">
-                  <Button variant="outline" size="sm">Log in</Button>
+                  <Button variant="outline" size="sm">
+                    Log in
+                  </Button>
                 </Link>
                 <Link to="/register">
                   <Button size="sm">Sign up</Button>
@@ -173,7 +195,7 @@ export const Header: React.FC = () => {
           <motion.div
             className="fixed inset-0 top-[60px] bg-white dark:bg-neutral-900 z-40 md:hidden"
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'calc(100vh - 60px)' }}
+            animate={{ opacity: 1, height: "calc(100vh - 60px)" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
@@ -185,9 +207,11 @@ export const Header: React.FC = () => {
                     to={item.path}
                     className={`
                       text-lg font-medium p-2 rounded-md transition-colors
-                      ${location.pathname === item.path 
-                        ? `${activeNavClass} bg-neutral-100 dark:bg-neutral-800` 
-                        : inactiveNavClass}
+                      ${
+                        location.pathname === item.path
+                          ? `${activeNavClass} bg-neutral-100 dark:bg-neutral-800`
+                          : inactiveNavClass
+                      }
                     `}
                   >
                     {item.name}
@@ -198,7 +222,9 @@ export const Header: React.FC = () => {
               {!user && (
                 <div className="flex flex-col space-y-2 mt-6">
                   <Link to="/login" className="w-full">
-                    <Button variant="outline" className="w-full">Log in</Button>
+                    <Button variant="outline" className="w-full">
+                      Log in
+                    </Button>
                   </Link>
                   <Link to="/register" className="w-full">
                     <Button className="w-full">Sign up</Button>

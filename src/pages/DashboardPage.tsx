@@ -1,109 +1,128 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { LineChart, TrendingUp, Users, Calendar, Award, Clipboard, Clock, Play } from 'lucide-react';
-import { Header } from '../components/layout/Header';
-import { Footer } from '../components/layout/Footer';
-import { Card, CardHeader, CardBody } from '../components/ui/Card';
-import { StatsCard } from '../components/stats/StatsCard';
-import { Button } from '../components/ui/Button';
-import { ScoringDrawer } from '../components/scoring/ScoringDrawer';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import {
+  LineChart,
+  TrendingUp,
+  Users,
+  Calendar,
+  Award,
+  Clipboard,
+  Clock,
+  Play,
+} from "lucide-react";
+import { Header } from "../components/layout/Header";
+import { Footer } from "../components/layout/Footer";
+import { Card, CardHeader, CardBody } from "../components/ui/Card";
+import { StatsCard } from "../components/stats/StatsCard";
+import { Button } from "../components/ui/Button";
+import { ScoringDrawer } from "../components/scoring/ScoringDrawer";
+import { useAuth } from "../context/AuthContext";
 
 // Mock data for current matches
 const currentMatches = [
   {
-    id: '1',
+    id: "1",
     homeTeam: {
-      name: 'Lakers',
+      name: "Lakers",
       score: 0,
-      logo: 'https://images.pexels.com/photos/2891884/pexels-photo-2891884.jpeg?auto=compress&cs=tinysrgb&w=150'
+      logo: "/images/lakerslogo.png",
     },
     awayTeam: {
-      name: 'Celtics',
+      name: "Warriors",
       score: 0,
-      logo: 'https://images.pexels.com/photos/3972755/pexels-photo-3972755.jpeg?auto=compress&cs=tinysrgb&w=150'
+      logo: "/images/stateworiuslogo.png",
     },
-    status: 'scheduled',
-    startTime: '2025-05-15T19:30:00',
-    venue: 'Staples Center'
+    status: "scheduled",
+    startTime: "2025-05-15T19:30:00",
+    venue: "Staples Center",
   },
   {
-    id: '2',
+    id: "2",
     homeTeam: {
-      name: 'Warriors',
+      name: "Lakers",
       score: 0,
-      logo: 'https://images.pexels.com/photos/5384429/pexels-photo-5384429.jpeg?auto=compress&cs=tinysrgb&w=150'
+      logo: "/images/lakerslogo.png",
     },
     awayTeam: {
-      name: 'Rockets',
+      name: "Warriors",
       score: 0,
-      logo: 'https://images.pexels.com/photos/2834917/pexels-photo-2834917.jpeg?auto=compress&cs=tinysrgb&w=150'
+      logo: "/images/stateworiuslogo.png",
     },
-    status: 'scheduled',
-    startTime: '2025-05-15T20:00:00',
-    venue: 'Chase Center'
-  }
+    status: "scheduled",
+    startTime: "2025-05-15T20:00:00",
+    venue: "Chase Center",
+  },
 ];
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [matches, setMatches] = useState(currentMatches);
-  const [selectedMatch, setSelectedMatch] = useState<typeof currentMatches[0] | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<
+    (typeof currentMatches)[0] | null
+  >(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate("/login");
     }
   }, [user, navigate]);
 
   if (!user) return null;
 
   const formatMatchDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
+    return new Date(dateString).toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
-  const handleStartScoring = (match: typeof currentMatches[0]) => {
+  const handleStartScoring = (match: (typeof currentMatches)[0]) => {
     setSelectedMatch(match);
     setIsDrawerOpen(true);
   };
 
-  const handleScoreUpdate = (team: 'home' | 'away', points: number) => {
+  const handleScoreUpdate = (team: "home" | "away", points: number) => {
     if (!selectedMatch) return;
 
-    setMatches(currentMatches.map(match => {
-      if (match.id === selectedMatch.id) {
-        return {
-          ...match,
-          status: 'live',
-          [team === 'home' ? 'homeTeam' : 'awayTeam']: {
-            ...match[team === 'home' ? 'homeTeam' : 'awayTeam'],
-            score: Math.max(0, match[team === 'home' ? 'homeTeam' : 'awayTeam'].score + points)
-          }
-        };
-      }
-      return match;
-    }));
+    setMatches(
+      currentMatches.map((match) => {
+        if (match.id === selectedMatch.id) {
+          return {
+            ...match,
+            status: "live",
+            [team === "home" ? "homeTeam" : "awayTeam"]: {
+              ...match[team === "home" ? "homeTeam" : "awayTeam"],
+              score: Math.max(
+                0,
+                match[team === "home" ? "homeTeam" : "awayTeam"].score + points
+              ),
+            },
+          };
+        }
+        return match;
+      })
+    );
 
     // Update selected match
-    setSelectedMatch(prev => {
+    setSelectedMatch((prev) => {
       if (!prev) return null;
       return {
         ...prev,
-        status: 'live',
-        [team === 'home' ? 'homeTeam' : 'awayTeam']: {
-          ...prev[team === 'home' ? 'homeTeam' : 'awayTeam'],
-          score: Math.max(0, prev[team === 'home' ? 'homeTeam' : 'awayTeam'].score + points)
-        }
+        status: "live",
+        [team === "home" ? "homeTeam" : "awayTeam"]: {
+          ...prev[team === "home" ? "homeTeam" : "awayTeam"],
+          score: Math.max(
+            0,
+            prev[team === "home" ? "homeTeam" : "awayTeam"].score + points
+          ),
+        },
       };
     });
   };
@@ -166,10 +185,14 @@ export const DashboardPage: React.FC = () => {
                       </p>
                       <Button
                         leftIcon={<Play size={16} />}
-                        variant={match.status === 'live' ? 'primary' : 'outline'}
+                        variant={
+                          match.status === "live" ? "primary" : "outline"
+                        }
                         onClick={() => handleStartScoring(match)}
                       >
-                        {match.status === 'live' ? 'Continue Scoring' : 'Start Scoring'}
+                        {match.status === "live"
+                          ? "Continue Scoring"
+                          : "Start Scoring"}
                       </Button>
                     </div>
                   </div>
@@ -281,7 +304,10 @@ export const DashboardPage: React.FC = () => {
             </CardHeader>
             <CardBody>
               <div className="w-full h-64 flex items-center justify-center">
-                <LineChart size={48} className="text-neutral-300 dark:text-neutral-700" />
+                <LineChart
+                  size={48}
+                  className="text-neutral-300 dark:text-neutral-700"
+                />
                 <p className="ml-4 text-neutral-500 dark:text-neutral-400">
                   Performance chart visualization would appear here.
                 </p>
@@ -354,7 +380,11 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {user.role === 'statistician' ? <StatisticianDashboard /> : <DefaultDashboard />}
+            {user.role === "statistician" ? (
+              <StatisticianDashboard />
+            ) : (
+              <DefaultDashboard />
+            )}
           </motion.div>
         </div>
       </main>

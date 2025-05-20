@@ -1,79 +1,64 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardBody } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardBody } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 // Mock data for upcoming matches
 const upcomingMatches = [
   {
-    id: '1',
+    id: "1",
     homeTeam: {
-      name: 'Lakers',
-      logo: 'https://images.pexels.com/photos/2891884/pexels-photo-2891884.jpeg?auto=compress&cs=tinysrgb&w=150',
-      abbreviation: 'LAL'
+      name: "Lakers",
+      logo: "/images/lakerslogo.png",
+      abbreviation: "LAL",
     },
     awayTeam: {
-      name: 'Celtics',
-      logo: 'https://images.pexels.com/photos/3972755/pexels-photo-3972755.jpeg?auto=compress&cs=tinysrgb&w=150',
-      abbreviation: 'BOS'
+      name: "Warriors",
+      logo: "/images/stateworiuslogo.png",
+      abbreviation: "GSW",
     },
-    date: '2025-05-15T19:30:00',
-    location: 'Staples Center, Los Angeles'
+    date: "2025-05-15T19:30:00",
+    location: "Staples Center, Los Angeles",
   },
   {
-    id: '2',
+    id: "2",
     homeTeam: {
-      name: 'Bulls',
-      logo: 'https://images.pexels.com/photos/3755440/pexels-photo-3755440.jpeg?auto=compress&cs=tinysrgb&w=150',
-      abbreviation: 'CHI'
+      name: "Celtics",
+      logo: "/images/celticslogo.png",
+      abbreviation: "BOS",
     },
     awayTeam: {
-      name: 'Heat',
-      logo: 'https://images.pexels.com/photos/3657154/pexels-photo-3657154.jpeg?auto=compress&cs=tinysrgb&w=150',
-      abbreviation: 'MIA'
+      name: "Heat",
+      logo: "/images/heatlogo.png",
+      abbreviation: "MIA",
     },
-    date: '2025-05-16T20:00:00',
-    location: 'United Center, Chicago'
+    date: "2025-05-16T20:00:00",
+    location: "TD Garden, Boston",
   },
   {
-    id: '3',
+    id: "3",
     homeTeam: {
-      name: 'Warriors',
-      logo: 'https://images.pexels.com/photos/5384429/pexels-photo-5384429.jpeg?auto=compress&cs=tinysrgb&w=150',
-      abbreviation: 'GSW'
+      name: "Bucks",
+      logo: "/images/buckslogo.png",
+      abbreviation: "MIL",
     },
     awayTeam: {
-      name: 'Rockets',
-      logo: 'https://images.pexels.com/photos/2834917/pexels-photo-2834917.jpeg?auto=compress&cs=tinysrgb&w=150',
-      abbreviation: 'HOU'
+      name: "Nets",
+      logo: "/images/netslogo.png",
+      abbreviation: "BKN",
     },
-    date: '2025-05-17T18:30:00',
-    location: 'Chase Center, San Francisco'
+    date: "2025-05-18T19:00:00",
+    location: "Fiserv Forum, Milwaukee",
   },
-  {
-    id: '4',
-    homeTeam: {
-      name: 'Bucks',
-      logo: 'https://images.pexels.com/photos/2346/sport-high-united-states-of-america-ball.jpg?auto=compress&cs=tinysrgb&w=150',
-      abbreviation: 'MIL'
-    },
-    awayTeam: {
-      name: 'Nets',
-      logo: 'https://images.pexels.com/photos/1752757/pexels-photo-1752757.jpeg?auto=compress&cs=tinysrgb&w=150',
-      abbreviation: 'BKN'
-    },
-    date: '2025-05-18T19:00:00',
-    location: 'Fiserv Forum, Milwaukee'
-  }
 ];
 
 export const UpcomingMatchesSection: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 3;
   const totalPages = Math.ceil(upcomingMatches.length / itemsPerPage);
-  
+
   const visibleMatches = upcomingMatches.slice(
     currentPage * itemsPerPage,
     (currentPage + 1) * itemsPerPage
@@ -90,13 +75,13 @@ export const UpcomingMatchesSection: React.FC = () => {
   // Format date for display
   const formatMatchDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     }).format(date);
   };
 
@@ -113,7 +98,7 @@ export const UpcomingMatchesSection: React.FC = () => {
           >
             Upcoming Matches
           </motion.h2>
-          
+
           <div className="flex space-x-2">
             <Button
               variant="ghost"
@@ -122,7 +107,7 @@ export const UpcomingMatchesSection: React.FC = () => {
               leftIcon={<ChevronLeft size={18} />}
             />
             <Button
-              variant="ghost" 
+              variant="ghost"
               onClick={nextPage}
               aria-label="Next page"
               rightIcon={<ChevronRight size={18} />}
@@ -144,18 +129,18 @@ export const UpcomingMatchesSection: React.FC = () => {
                   <Card
                     className="h-full"
                     motionProps={{
-                      whileHover: { y: -5, transition: { duration: 0.2 } }
+                      whileHover: { y: -5, transition: { duration: 0.2 } },
                     }}
                   >
                     <CardBody>
                       <p className="text-primary-500 dark:text-primary-400 text-sm mb-4">
                         {formatMatchDate(match.date)}
                       </p>
-                      
+
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
                           <div className="w-12 h-12 rounded-full overflow-hidden bg-neutral-100 dark:bg-neutral-700">
-                            <img 
+                            <img
                               src={match.homeTeam.logo}
                               alt={match.homeTeam.name}
                               className="w-full h-full object-cover"
@@ -183,7 +168,7 @@ export const UpcomingMatchesSection: React.FC = () => {
                             </p>
                           </div>
                           <div className="w-12 h-12 rounded-full overflow-hidden bg-neutral-100 dark:bg-neutral-700">
-                            <img 
+                            <img
                               src={match.awayTeam.logo}
                               alt={match.awayTeam.name}
                               className="w-full h-full object-cover"
@@ -191,16 +176,12 @@ export const UpcomingMatchesSection: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="text-center">
                         <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
                           {match.location}
                         </p>
-                        <Button 
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
+                        <Button variant="outline" size="sm" className="w-full">
                           View Details
                         </Button>
                       </div>
@@ -211,7 +192,7 @@ export const UpcomingMatchesSection: React.FC = () => {
             ))}
           </AnimatePresence>
         </div>
-        
+
         <div className="flex justify-center mt-8">
           <Link to="/matches">
             <Button rightIcon={<ChevronRight size={18} />}>
