@@ -30,9 +30,8 @@ export const Header: React.FC = () => {
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Matches", path: "/matches" },
-    // { name: "Players", path: "/players" },
     { name: "Teams", path: "/teams" },
-    { name: "News", path: "/news" },
+    {name: "TeamStandings", path:"/teamstandings"}
   ];
 
   // Add protected routes based on user role
@@ -41,7 +40,7 @@ export const Header: React.FC = () => {
       navItems.push({ name: "Admin", path: "/admin" });
     }
     if (user.role === "statistician") {
-      navItems.push({ name: "Stats", path: "/stats" });
+      navItems.push({ name: "Team Standings", path: "/stats" });
     }
     if (user.role === "coach") {
       navItems.push({ name: "Coach", path: "/coach" });

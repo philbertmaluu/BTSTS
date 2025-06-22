@@ -38,15 +38,14 @@ export const HeroSection: React.FC = () => {
             animate={controls}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-neutral-900 dark:text-white leading-tight mb-6">
-              Welcome 
-              <span className="text-primary-500"> to the</span>
+              Track Basketball
+              <span className="text-primary-500"> Statistics</span>
               <br />
-              Basketball Dar es salaam League
+              Like Never Before
             </h1>
             <p className="text-lg md:text-xl text-neutral-700 dark:text-neutral-300 mb-8 max-w-lg">
-             We are the Basketball Association within Dar es salaam Region. We have full authority over the basketball sport in Dar es salaam and we are responsible for all Basketball development activities in Dar es salaaam Region.
-              The Basketball Dar es salaam league (BDL) is the biggest basketball league in Tanzania
-              </p>
+              Elevate your game with comprehensive analytics, real-time updates, and professional insights for players, coaches, and fans.
+            </p>
             <div className="flex flex-wrap gap-4">
               {user ? (
                 <Link to="/dashboard">
@@ -57,10 +56,14 @@ export const HeroSection: React.FC = () => {
               ) : (
                 <>
                   <Link to="/register">
-                    
+                    <Button size="lg" rightIcon={<ChevronRight size={18} />}>
+                      Get Started
+                    </Button>
                   </Link>
                   <Link to="/about">
-                    
+                    <Button size="lg" variant="outline">
+                      Learn More
+                    </Button>
                   </Link>
                 </>
               )}
