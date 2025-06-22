@@ -18,40 +18,232 @@ import { StatsCard } from "../components/stats/StatsCard";
 import { Button } from "../components/ui/Button";
 import { ScoringDrawer } from "../components/scoring/ScoringDrawer";
 import { useAuth } from "../context/AuthContext";
-
-// Mock data for current matches
+;
+// Match data with local teams
 const currentMatches = [
   {
     id: "1",
     homeTeam: {
-      name: "Lakers",
+      name: "Army Basketball Club",
       score: 0,
-      logo: "/images/lakerslogo.png",
+      logo: "/images/ABC.jpeg",
     },
     awayTeam: {
-      name: "Warriors",
+      name: "Chui Basketball Club",
       score: 0,
-      logo: "/images/stateworiuslogo.png",
+      logo: "/images/CHUI.jpeg",
     },
     status: "scheduled",
-    startTime: "2025-05-15T19:30:00",
-    venue: "Staples Center",
+    startTime: "2025-06-21T18:00:00",
+    venue: "National Indoor Stadium",
   },
   {
     id: "2",
     homeTeam: {
-      name: "Lakers",
+      name: "JKT Basketball Club",
       score: 0,
-      logo: "/images/lakerslogo.png",
+      logo: "/images/JKT.jpeg",
     },
     awayTeam: {
-      name: "Warriors",
+      name: "Darcity Basketball Club",
       score: 0,
-      logo: "/images/stateworiuslogo.png",
+      logo: "/images/DARCITY.jpeg",
     },
     status: "scheduled",
-    startTime: "2025-05-15T20:00:00",
-    venue: "Chase Center",
+    startTime: "2025-06-22T19:00:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "3",
+    homeTeam: {
+      name: "KIUT Giants Club",
+      score: 0,
+      logo: "/images/KIUT.jpeg",
+    },
+    awayTeam: {
+      name: "Pazi Basketball Club",
+      score: 0,
+      logo: "/images/PAZI.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-06-23T18:30:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "4",
+    homeTeam: {
+      name: "UDSM Outsiders",
+      score: 0,
+      logo: "/images/UDSM.jpeg",
+    },
+    awayTeam: {
+      name: "Army Basketball Club",
+      score: 0,
+      logo: "/images/ABC.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-06-24T19:30:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "5",
+    homeTeam: {
+      name: "Chui Basketball Club",
+      score: 0,
+      logo: "/images/CHUI.jpeg",
+    },
+    awayTeam: {
+      name: "JKT Basketball Club",
+      score: 0,
+      logo: "/images/JKT.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-06-25T18:00:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "6",
+    homeTeam: {
+      name: "Darcity Basketball Club",
+      score: 0,
+      logo: "/images/DARCITY.jpeg",
+    },
+    awayTeam: {
+      name: "KIUT Giants Club",
+      score: 0,
+      logo: "/images/KIUT.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-06-26T20:00:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "7",
+    homeTeam: {
+      name: "Pazi Basketball Club",
+      score: 0,
+      logo: "/images/PAZI.jpeg",
+    },
+    awayTeam: {
+      name: "UDSM Outsiders",
+      score: 0,
+      logo: "/images/UDSM.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-06-27T19:00:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "8",
+    homeTeam: {
+      name: "Army Basketball Club",
+      score: 0,
+      logo: "/images/ABC.jpeg",
+    },
+    awayTeam: {
+      name: "JKT Basketball Club",
+      score: 0,
+      logo: "/images/JKT.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-06-28T18:30:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "9",
+    homeTeam: {
+      name: "Chui Basketball Club",
+      score: 0,
+      logo: "/images/CHUI.jpeg",
+    },
+    awayTeam: {
+      name: "KIUT Giants Club",
+      score: 0,
+      logo: "/images/KIUT.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-06-29T19:30:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "10",
+    homeTeam: {
+      name: "Darcity Basketball Club",
+      score: 0,
+      logo: "/images/DARCITY.jpeg",
+    },
+    awayTeam: {
+      name: "UDSM Outsiders",
+      score: 0,
+      logo: "/images/UDSM.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-06-30T18:00:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "11",
+    homeTeam: {
+      name: "Pazi Basketball Club",
+      score: 0,
+      logo: "/images/PAZI.jpeg",
+    },
+    awayTeam: {
+      name: "Army Basketball Club",
+      score: 0,
+      logo: "/images/ABC.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-07-01T20:00:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "12",
+    homeTeam: {
+      name: "JKT Basketball Club",
+      score: 0,
+      logo: "/images/JKT.jpeg",
+    },
+    awayTeam: {
+      name: "KIUT Giants Club",
+      score: 0,
+      logo: "/images/KIUT.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-07-02T19:00:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "13",
+    homeTeam: {
+      name: "Chui Basketball Club",
+      score: 0,
+      logo: "/images/CHUI.jpeg",
+    },
+    awayTeam: {
+      name: "UDSM Outsiders",
+      score: 0,
+      logo: "/images/UDSM.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-07-03T18:30:00",
+    venue: "National Indoor Stadium",
+  },
+  {
+    id: "14",
+    homeTeam: {
+      name: "Darcity Basketball Club",
+      score: 0,
+      logo: "/images/DARCITY.jpeg",
+    },
+    awayTeam: {
+      name: "Pazi Basketball Club",
+      score: 0,
+      logo: "/images/PAZI.jpeg",
+    },
+    status: "scheduled",
+    startTime: "2025-07-04T19:30:00",
+    venue: "National Indoor Stadium",
   },
 ];
 

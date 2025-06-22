@@ -34,19 +34,19 @@ const newsArticles = [
     readTime: "8 min read",
     featured: true,
   },
-  {
-    id: "3",
-    title: "New Training Facility Opens in Downtown",
-    excerpt:
-      "State-of-the-art basketball training center opens its doors to professional athletes...",
-    content: "Full article content would go here...",
-    image: "/images/images.jpeg",
-    category: "Facilities",
-    author: "Mike Brown",
-    date: "2024-05-13T16:45:00",
-    readTime: "4 min read",
-    featured: false,
-  },
+  // {
+  //   id: "3",
+  //   title: "New Training Facility Opens in Downtown",
+  //   excerpt:
+  //     "State-of-the-art basketball training center opens its doors to professional athletes...",
+  //   content: "Full article content would go here...",
+  //   image: "/images/images.jpeg",
+  //   category: "Facilities",
+  //   author: "Mike Brown",
+  //   date: "2024-05-13T16:45:00",
+  //   readTime: "4 min read",
+  //   featured: false,
+  // },
   // Add more articles as needed
 ];
 

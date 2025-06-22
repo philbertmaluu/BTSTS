@@ -1,216 +1,246 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Search, Filter, Calendar } from "lucide-react";
 import { Header } from "../components/layout/Header";
 import { Footer } from "../components/layout/Footer";
-import { Card, CardHeader, CardBody } from "../components/ui/Card";
-import { Button } from "../components/ui/Button";
 
-// Mock data for matches - in a real app, this would come from an API
+// Teams in the system
+const teams = [
+  { name: "Army Basketball Club", logo: "/images/ABC.jpeg" },
+  { name: "Chui Basketball Club", logo: "/images/CHUI.jpeg" },
+  { name: "JKT Basketball Club", logo: "/images/JKT.jpeg" },
+  { name: "Darcity Basketball Club", logo: "/images/DARCITY.jpeg" },
+  { name: "KIUT Giants Club", logo: "/images/KIUT.jpeg" },
+  { name: "Pazi Basketball Club", logo: "/images/PAZI.jpeg" },
+  { name: "UDSM Outsiders", logo: "/images/UDSM.jpeg" },
+];
+
+// Manually scheduled matches with assumed scores and status
 const matches = [
   {
     id: "1",
-    homeTeam: {
-      name: "Lakers",
-      score: 98,
-      logo: "/images/lakerslogo.png",
-    },
-    awayTeam: {
-      name: "Warriors",
-      score: 102,
-      logo: "/images/stateworiuslogo.png",
-    },
-    status: "completed",
-    date: "2024-05-15T19:30:00",
-    venue: "Staples Center",
+    homeTeam: { ...teams[0], score: 68 },
+    awayTeam: { ...teams[1], score: 62 },
+    status: "played",
+    date: "2025-01-01T18:00",
+    venue: "Gymkhana",
   },
   {
     id: "2",
-    homeTeam: {
-      name: "Lakers",
-      score: 0,
-      logo: "/images/lakerslogo.png",
-    },
-    awayTeam: {
-      name: "Warriors",
-      score: 0,
-      logo: "/images/stateworiuslogo.png",
-    },
-    status: "scheduled",
-    date: "2024-05-16T20:00:00",
-    venue: "Chase Center",
+    homeTeam: { ...teams[2], score: 74 },
+    awayTeam: { ...teams[3], score: 70 },
+    status: "played",
+    date: "2025-01-02T18:00",
+    venue: "Gymkhana",
   },
-  // Add more matches as needed
+  {
+    id: "3",
+    homeTeam: { ...teams[4], score: 59 },
+    awayTeam: { ...teams[5], score: 65 },
+    status: "played",
+    date: "2025-01-03T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "4",
+    homeTeam: { ...teams[0], score: 71 },
+    awayTeam: { ...teams[2], score: 77 },
+    status: "played",
+    date: "2025-01-04T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "5",
+    homeTeam: { ...teams[1], score: 80 },
+    awayTeam: { ...teams[4], score: 66 },
+    status: "played",
+    date: "2025-01-05T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "6",
+    homeTeam: { ...teams[3], score: 69 },
+    awayTeam: { ...teams[5], score: 73 },
+    status: "played",
+    date: "2025-01-06T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "7",
+    homeTeam: { ...teams[0], score: 82 },
+    awayTeam: { ...teams[3], score: 75 },
+    status: "played",
+    date: "2025-01-07T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "8",
+    homeTeam: { ...teams[1], score: 64 },
+    awayTeam: { ...teams[5], score: 70 },
+    status: "played",
+    date: "2025-01-08T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "9",
+    homeTeam: { ...teams[2], score: 78 },
+    awayTeam: { ...teams[4], score: 60 },
+    status: "played",
+    date: "2025-01-09T18:00",
+    venue: "Gymkhana",
+  },
+  // {
+  //   id: "10",
+  //   homeTeam: { ...teams[0], score: 75 },
+  //   awayTeam: { ...teams[4], score: 68 },
+  //   status: "upcoming",
+  //   date: "2025-01-10T18:00",
+  //   venue: "Gymkhana",
+  // },
+  // {
+  //   id: "11",
+  //   homeTeam: { ...teams[1], score: 72 },
+  //   awayTeam: { ...teams[3], score: 74 },
+  //   status: "upcoming",
+  //   date: "2025-01-11T18:00",
+  //   venue: "Gymkhana",
+  // },
+  // {
+  //   id: "12",
+  //   homeTeam: { ...teams[2], score: 69 },
+  //   awayTeam: { ...teams[5], score: 71 },
+  //   status: "upcoming",
+  //   date: "2025-01-12T18:00",
+  //   venue: "Gymkhana",
+  // },
+  // {
+  //   id: "13",
+  //   homeTeam: { ...teams[0], score: 67 },
+  //   awayTeam: { ...teams[5], score: 72 },
+  //   status: "upcoming",
+  //   date: "2025-01-13T18:00",
+  //   venue: "Gymkhana",
+  // },
+  // {
+  //   id: "14",
+  //   homeTeam: { ...teams[1], score: 61 },
+  //   awayTeam: { ...teams[2], score: 79 },
+  //   status: "upcoming",
+  //   date: "2025-01-14T18:00",
+  //   venue: "Gymkhana",
+  // },
+  // {
+  //   id: "15",
+  //   homeTeam: { ...teams[3], score: 70 },
+  //   awayTeam: { ...teams[4], score: 65 },
+  //   status: "upcoming",
+  //   date: "2025-01-15T18:00",
+  //   venue: "Gymkhana",
+  // },
+  {
+    id: "16",
+    homeTeam: { ...teams[6] },
+    awayTeam: { ...teams[0]},
+    status: "upcoming",
+    date: "2025-07-16T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "17",
+    homeTeam: { ...teams[6]},
+    awayTeam: { ...teams[1] },
+    status: "upcoming",
+    date: "2025-07-17T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "18",
+    homeTeam: { ...teams[6]},
+    awayTeam: { ...teams[2] },
+    status: "upcoming",
+    date: "2025-07-18T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "19",
+    homeTeam: { ...teams[6] },
+    awayTeam: { ...teams[3]},
+    status: "upcoming",
+    date: "2025-07-19T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "20",
+    homeTeam: { ...teams[6] },
+    awayTeam: { ...teams[4] },
+    status: "upcoming",
+    date: "2025-07-20T18:00",
+    venue: "Gymkhana",
+  },
+  {
+    id: "21",
+    homeTeam: { ...teams[6]},
+    awayTeam: { ...teams[5]},
+    status: "upcoming",
+    date: "2025-07-21T18:00",
+    venue: "Gymkhana",
+  },
 ];
 
 export const MatchesPage: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  const formatMatchDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const filteredMatches = matches.filter((match) => {
-    const matchesSearch =
-      match.homeTeam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      match.awayTeam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      match.venue.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === "all" || match.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
   return (
     <>
       <Header />
       <main className="min-h-screen bg-neutral-50 dark:bg-neutral-900 pt-20">
         <div className="container mx-auto px-4 py-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white">
-                  Matches
-                </h1>
-                <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-                  View and track all basketball matches
-                </p>
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8 text-center">
+            Match Fixtures
+          </h1>
+          <div className="flex flex-col gap-4 items-center">
+            {matches.map((match) => (
+              <div
+                key={match.id}
+                className="flex flex-col md:flex-row items-center gap-4 w-full max-w-2xl bg-white dark:bg-neutral-800 rounded-lg shadow p-4"
+              >
+                <div className="flex items-center gap-2 flex-1 justify-end">
+                  <img
+                    src={match.homeTeam.logo}
+                    alt={match.homeTeam.name}
+                    className="w-10 h-10 object-contain rounded"
+                  />
+                  <span className="font-semibold">{match.homeTeam.name}</span>
+                  <span className="font-bold text-lg ml-2">
+                    {match.homeTeam.score}
+                  </span>
+                </div>
+                <span className="mx-2 font-bold text-xl">vs</span>
+                <div className="flex items-center gap-2 flex-1 justify-start">
+                  <span className="font-bold text-lg mr-2">
+                    {match.awayTeam.score}
+                  </span>
+                  <img
+                    src={match.awayTeam.logo}
+                    alt={match.awayTeam.name}
+                    className="w-10 h-10 object-contain rounded"
+                  />
+                  <span className="font-semibold">{match.awayTeam.name}</span>
+                </div>
+                <div className="flex flex-col items-center min-w-[120px]">
+                  <span className="text-sm">
+                    {match.date.replace("T", " ")}
+                  </span>
+                  <span className="text-xs">{match.venue}</span>
+                  <span
+                    className={
+                      match.status === "played"
+                        ? "text-green-600 text-xs"
+                        : "text-blue-600 text-xs"
+                    }
+                  >
+                    {match.status === "played" ? "Played" : "Upcoming"}
+                  </span>
+                </div>
               </div>
-            </div>
-
-            {/* Search and Filter Section */}
-            <div className="mb-8 flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400"
-                  size={20}
-                />
-                <input
-                  type="text"
-                  placeholder="Search matches..."
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  leftIcon={<Filter size={16} />}
-                  onClick={() => setStatusFilter("all")}
-                  className={
-                    statusFilter === "all"
-                      ? "bg-primary-50 dark:bg-primary-900/30"
-                      : ""
-                  }
-                >
-                  All
-                </Button>
-                <Button
-                  variant="outline"
-                  leftIcon={<Calendar size={16} />}
-                  onClick={() => setStatusFilter("scheduled")}
-                  className={
-                    statusFilter === "scheduled"
-                      ? "bg-primary-50 dark:bg-primary-900/30"
-                      : ""
-                  }
-                >
-                  Upcoming
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setStatusFilter("completed")}
-                  className={
-                    statusFilter === "completed"
-                      ? "bg-primary-50 dark:bg-primary-900/30"
-                      : ""
-                  }
-                >
-                  Completed
-                </Button>
-              </div>
-            </div>
-
-            {/* Matches List */}
-            <div className="space-y-4">
-              {filteredMatches.map((match) => (
-                <Card key={match.id}>
-                  <CardBody>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center">
-                          <img
-                            src={match.homeTeam.logo}
-                            alt={match.homeTeam.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <div className="ml-3">
-                            <p className="font-semibold text-neutral-900 dark:text-white">
-                              {match.homeTeam.name}
-                            </p>
-                            <p className="text-2xl font-bold text-primary-500">
-                              {match.homeTeam.score}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-neutral-500 dark:text-neutral-400 text-lg font-semibold">
-                          VS
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-3 text-right">
-                            <p className="font-semibold text-neutral-900 dark:text-white">
-                              {match.awayTeam.name}
-                            </p>
-                            <p className="text-2xl font-bold text-primary-500">
-                              {match.awayTeam.score}
-                            </p>
-                          </div>
-                          <img
-                            src={match.awayTeam.logo}
-                            alt={match.awayTeam.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
-                          {formatMatchDate(match.date)}
-                        </p>
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            match.status === "completed"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                          }`}
-                        >
-                          {match.status === "completed"
-                            ? "Completed"
-                            : "Upcoming"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                      {match.venue}
-                    </div>
-                  </CardBody>
-                </Card>
-              ))}
-            </div>
-          </motion.div>
+            ))}
+          </div>
         </div>
       </main>
       <Footer />

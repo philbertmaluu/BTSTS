@@ -30,9 +30,14 @@ export const Header: React.FC = () => {
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Matches", path: "/matches" },
+<<<<<<< HEAD
     { name: "Players", path: "/players" },
     { name: "Teams", path: "/teams" },
     { name: "News", path: "/news" },
+=======
+    { name: "Teams", path: "/teams" },
+    {name: "TeamStandings", path:"/teamstandings"}
+>>>>>>> 173d77b0001df2eb41b49b2bab3a04fa8442dc0e
   ];
 
   // Add protected routes based on user role
@@ -41,7 +46,11 @@ export const Header: React.FC = () => {
       navItems.push({ name: "Admin", path: "/admin" });
     }
     if (user.role === "statistician") {
+<<<<<<< HEAD
       navItems.push({ name: "Stats", path: "/stats" });
+=======
+      navItems.push({ name: "Team Standings", path: "/stats" });
+>>>>>>> 173d77b0001df2eb41b49b2bab3a04fa8442dc0e
     }
     if (user.role === "coach") {
       navItems.push({ name: "Coach", path: "/coach" });
@@ -73,7 +82,11 @@ export const Header: React.FC = () => {
               className="h-8 w-8"
             />
             <span className="text-xl font-display font-bold text-neutral-900 dark:text-white">
+<<<<<<< HEAD
               HoopStats
+=======
+              BDL
+>>>>>>> 173d77b0001df2eb41b49b2bab3a04fa8442dc0e
             </span>
           </Link>
 

@@ -4,7 +4,6 @@ import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { HeroSection } from '../components/home/HeroSection';
 import { FeaturesSection } from '../components/home/FeaturesSection';
-import { UpcomingMatchesSection } from '../components/home/UpcomingMatchesSection';
 
 export const HomePage: React.FC = () => {
   return (
@@ -18,7 +17,7 @@ export const HomePage: React.FC = () => {
       <main>
         <HeroSection />
         <FeaturesSection />
-        <UpcomingMatchesSection />
+        {/* UpcomingMatchesSection removed */}
       </main>
       <Footer />
     </motion.div>
