@@ -1,246 +1,320 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "../components/layout/Header";
 import { Footer } from "../components/layout/Footer";
+import { get } from "../api/baseApi";
+import { AxiosError } from "axios";
 
-// Teams in the system
-const teams = [
-  { name: "Army Basketball Club", logo: "/images/ABC.jpeg" },
-  { name: "Chui Basketball Club", logo: "/images/CHUI.jpeg" },
-  { name: "JKT Basketball Club", logo: "/images/JKT.jpeg" },
-  { name: "Darcity Basketball Club", logo: "/images/DARCITY.jpeg" },
-  { name: "KIUT Giants Club", logo: "/images/KIUT.jpeg" },
-  { name: "Pazi Basketball Club", logo: "/images/PAZI.jpeg" },
-  { name: "UDSM Outsiders", logo: "/images/UDSM.jpeg" },
-];
+// TypeScript interfaces for the API response
+interface Team {
+  id: number;
+  name: string;
+  logo: string | null;
+  coach_id: number;
+  created_at: string;
+  updated_at: string;
+}
 
-// Manually scheduled matches with assumed scores and status
-const matches = [
-  {
-    id: "1",
-    homeTeam: { ...teams[0], score: 68 },
-    awayTeam: { ...teams[1], score: 62 },
-    status: "played",
-    date: "2025-01-01T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "2",
-    homeTeam: { ...teams[2], score: 74 },
-    awayTeam: { ...teams[3], score: 70 },
-    status: "played",
-    date: "2025-01-02T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "3",
-    homeTeam: { ...teams[4], score: 59 },
-    awayTeam: { ...teams[5], score: 65 },
-    status: "played",
-    date: "2025-01-03T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "4",
-    homeTeam: { ...teams[0], score: 71 },
-    awayTeam: { ...teams[2], score: 77 },
-    status: "played",
-    date: "2025-01-04T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "5",
-    homeTeam: { ...teams[1], score: 80 },
-    awayTeam: { ...teams[4], score: 66 },
-    status: "played",
-    date: "2025-01-05T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "6",
-    homeTeam: { ...teams[3], score: 69 },
-    awayTeam: { ...teams[5], score: 73 },
-    status: "played",
-    date: "2025-01-06T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "7",
-    homeTeam: { ...teams[0], score: 82 },
-    awayTeam: { ...teams[3], score: 75 },
-    status: "played",
-    date: "2025-01-07T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "8",
-    homeTeam: { ...teams[1], score: 64 },
-    awayTeam: { ...teams[5], score: 70 },
-    status: "played",
-    date: "2025-01-08T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "9",
-    homeTeam: { ...teams[2], score: 78 },
-    awayTeam: { ...teams[4], score: 60 },
-    status: "played",
-    date: "2025-01-09T18:00",
-    venue: "Gymkhana",
-  },
-  // {
-  //   id: "10",
-  //   homeTeam: { ...teams[0], score: 75 },
-  //   awayTeam: { ...teams[4], score: 68 },
-  //   status: "upcoming",
-  //   date: "2025-01-10T18:00",
-  //   venue: "Gymkhana",
-  // },
-  // {
-  //   id: "11",
-  //   homeTeam: { ...teams[1], score: 72 },
-  //   awayTeam: { ...teams[3], score: 74 },
-  //   status: "upcoming",
-  //   date: "2025-01-11T18:00",
-  //   venue: "Gymkhana",
-  // },
-  // {
-  //   id: "12",
-  //   homeTeam: { ...teams[2], score: 69 },
-  //   awayTeam: { ...teams[5], score: 71 },
-  //   status: "upcoming",
-  //   date: "2025-01-12T18:00",
-  //   venue: "Gymkhana",
-  // },
-  // {
-  //   id: "13",
-  //   homeTeam: { ...teams[0], score: 67 },
-  //   awayTeam: { ...teams[5], score: 72 },
-  //   status: "upcoming",
-  //   date: "2025-01-13T18:00",
-  //   venue: "Gymkhana",
-  // },
-  // {
-  //   id: "14",
-  //   homeTeam: { ...teams[1], score: 61 },
-  //   awayTeam: { ...teams[2], score: 79 },
-  //   status: "upcoming",
-  //   date: "2025-01-14T18:00",
-  //   venue: "Gymkhana",
-  // },
-  // {
-  //   id: "15",
-  //   homeTeam: { ...teams[3], score: 70 },
-  //   awayTeam: { ...teams[4], score: 65 },
-  //   status: "upcoming",
-  //   date: "2025-01-15T18:00",
-  //   venue: "Gymkhana",
-  // },
-  {
-    id: "16",
-    homeTeam: { ...teams[6] },
-    awayTeam: { ...teams[0]},
-    status: "upcoming",
-    date: "2025-07-16T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "17",
-    homeTeam: { ...teams[6]},
-    awayTeam: { ...teams[1] },
-    status: "upcoming",
-    date: "2025-07-17T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "18",
-    homeTeam: { ...teams[6]},
-    awayTeam: { ...teams[2] },
-    status: "upcoming",
-    date: "2025-07-18T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "19",
-    homeTeam: { ...teams[6] },
-    awayTeam: { ...teams[3]},
-    status: "upcoming",
-    date: "2025-07-19T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "20",
-    homeTeam: { ...teams[6] },
-    awayTeam: { ...teams[4] },
-    status: "upcoming",
-    date: "2025-07-20T18:00",
-    venue: "Gymkhana",
-  },
-  {
-    id: "21",
-    homeTeam: { ...teams[6]},
-    awayTeam: { ...teams[5]},
-    status: "upcoming",
-    date: "2025-07-21T18:00",
-    venue: "Gymkhana",
-  },
-];
+interface Match {
+  id: number;
+  home_team_id: number;
+  away_team_id: number;
+  fixture_date: string;
+  fixture_time: string;
+  venue: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  home_team: Team;
+  away_team: Team;
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: Match[];
+}
+
+// Team logo mapping
+const teamLogos: { [key: string]: string } = {
+  "Army Basketball Club": "/images/ABC.jpeg",
+  "Chui Basketball Club": "/images/CHUI.jpeg",
+  "JKT Basketball Club": "/images/JKT.jpeg",
+  "Jkt Basketball Club": "/images/JKT.jpeg",
+  "Darcity Basketball Club": "/images/DARCITY.jpeg",
+  "Dar City Basketball Club": "/images/DARCITY.jpeg",
+  "KIUT Giants Club": "/images/KIUT.jpeg",
+  "Pazi Basketball Club": "/images/PAZI.jpeg",
+  "UDSM Outsiders": "/images/UDSM.jpeg",
+};
 
 export const MatchesPage: React.FC = () => {
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch matches from the API using baseApi get method
+  const fetchMatches = async () => {
+    try {
+      setLoading(true);
+      console.log("Starting API request to fixtures endpoint...");
+
+      const response = await get<ApiResponse>("fixtures");
+      console.log("API Response:", response);
+
+      if (response.success) {
+        console.log("Setting matches:", response.data);
+        setMatches(response.data);
+      } else {
+        setError("Failed to load matches");
+      }
+    } catch (err) {
+      console.error("Error fetching matches:", err);
+
+      if (err instanceof AxiosError) {
+        console.error("Axios Error Details:", {
+          message: err.message,
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          headers: err.response?.headers,
+          config: {
+            url: err.config?.url,
+            method: err.config?.method,
+            headers: err.config?.headers,
+          },
+        });
+
+        if (err.code === "ERR_NETWORK") {
+          setError("Network error - please check your connection");
+        } else if (err.response?.status === 0) {
+          setError("CORS error - server not allowing cross-origin requests");
+        } else {
+          setError(
+            err.response?.data?.message || err.message || "An error occurred"
+          );
+        }
+      } else {
+        console.error("Non-Axios error:", err);
+        setError("An unexpected error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchMatches();
+  }, []);
+
+  // Format date and time for display
+  const formatDateTime = (date: string, time: string) => {
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    return `${formattedDate} at ${time}`;
+  };
+
+  // Get team logo
+  const getTeamLogo = (teamName: string) => {
+    return teamLogos[teamName] || "/images/default-team.png";
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-neutral-50 dark:bg-neutral-900 pt-20">
+          <div className="container mx-auto px-4 py-8">
+            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8 text-center">
+              Match Fixtures
+            </h1>
+            <div className="flex justify-center items-center h-64">
+              <div className="text-neutral-600 dark:text-neutral-400">
+                Loading matches...
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-neutral-50 dark:bg-neutral-900 pt-20">
+          <div className="container mx-auto px-4 py-8">
+            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8 text-center">
+              Match Fixtures
+            </h1>
+            <div className="flex justify-center items-center h-64">
+              <div className="text-red-600 dark:text-red-400">
+                Error: {error}
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-neutral-50 dark:bg-neutral-900 pt-20">
+      <main className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-800 pt-20">
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-8 text-center">
-            Match Fixtures
-          </h1>
-          <div className="flex flex-col gap-4 items-center">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-neutral-900 dark:text-white mb-4">
+              Match Fixtures
+            </h1>
+            <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto">
+              Stay updated with all the latest basketball match schedules and
+              results
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
             {matches.map((match) => (
               <div
                 key={match.id}
-                className="flex flex-col md:flex-row items-center gap-4 w-full max-w-2xl bg-white dark:bg-neutral-800 rounded-lg shadow p-4"
+                className="group relative bg-white dark:bg-neutral-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-neutral-200 dark:border-neutral-700"
               >
-                <div className="flex items-center gap-2 flex-1 justify-end">
-                  <img
-                    src={match.homeTeam.logo}
-                    alt={match.homeTeam.name}
-                    className="w-10 h-10 object-contain rounded"
-                  />
-                  <span className="font-semibold">{match.homeTeam.name}</span>
-                  <span className="font-bold text-lg ml-2">
-                    {match.homeTeam.score}
-                  </span>
-                </div>
-                <span className="mx-2 font-bold text-xl">vs</span>
-                <div className="flex items-center gap-2 flex-1 justify-start">
-                  <span className="font-bold text-lg mr-2">
-                    {match.awayTeam.score}
-                  </span>
-                  <img
-                    src={match.awayTeam.logo}
-                    alt={match.awayTeam.name}
-                    className="w-10 h-10 object-contain rounded"
-                  />
-                  <span className="font-semibold">{match.awayTeam.name}</span>
-                </div>
-                <div className="flex flex-col items-center min-w-[120px]">
-                  <span className="text-sm">
-                    {match.date.replace("T", " ")}
-                  </span>
-                  <span className="text-xs">{match.venue}</span>
+                {/* Status Badge */}
+                <div className="absolute top-4 right-4 z-10">
                   <span
-                    className={
-                      match.status === "played"
-                        ? "text-green-600 text-xs"
-                        : "text-blue-600 text-xs"
-                    }
+                    className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                      match.status === "Played"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        : match.status === "Live"
+                        ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 animate-pulse"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                    }`}
                   >
-                    {match.status === "played" ? "Played" : "Upcoming"}
+                    {match.status}
                   </span>
                 </div>
+
+                {/* Card Header with Venue */}
+                <div className="p-6 pb-4">
+                  <div className="text-center mb-4">
+                    <div className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">
+                      {formatDateTime(match.fixture_date, match.fixture_time)}
+                    </div>
+                    <div className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                      📍 {match.venue}
+                    </div>
+                  </div>
+
+                  {/* Teams Section */}
+                  <div className="space-y-6">
+                    {/* Home Team */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="relative">
+                          <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
+                            <img
+                              src={getTeamLogo(match.home_team.name)}
+                              alt={match.home_team.name}
+                              className="w-12 h-12 object-contain rounded-full"
+                            />
+                          </div>
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-neutral-700 rounded-full border-2 border-white dark:border-neutral-700 flex items-center justify-center">
+                            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg text-neutral-900 dark:text-white">
+                            {match.home_team.name}
+                          </h3>
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                            Home Team
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* VS Divider */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-neutral-200 dark:border-neutral-600"></div>
+                      </div>
+                      <div className="relative flex justify-center">
+                        <span className="bg-white dark:bg-neutral-800 px-4 py-2 text-lg font-bold text-neutral-400 dark:text-neutral-500">
+                          VS
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Away Team */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="relative">
+                          <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                            <img
+                              src={getTeamLogo(match.away_team.name)}
+                              alt={match.away_team.name}
+                              className="w-12 h-12 object-contain rounded-full"
+                            />
+                          </div>
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-neutral-700 rounded-full border-2 border-white dark:border-neutral-700 flex items-center justify-center">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg text-neutral-900 dark:text-white">
+                            {match.away_team.name}
+                          </h3>
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                            Away Team
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Footer */}
+                <div className="px-6 py-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-neutral-700 dark:to-neutral-800 border-t border-neutral-200 dark:border-neutral-600">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                        Match #{match.id}
+                      </span>
+                    </div>
+                    <button className="px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-md">
+                      View Details
+                    </button>
+                  </div>
+                </div>
+
+                {/* Hover Effect Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-500/0 to-primary-600/0 group-hover:from-primary-500/5 group-hover:to-primary-600/5 transition-all duration-300 pointer-events-none"></div>
               </div>
             ))}
           </div>
+
+          {/* Empty State */}
+          {matches.length === 0 && !loading && !error && (
+            <div className="text-center py-16">
+              <div className="w-24 h-24 mx-auto mb-6 bg-neutral-200 dark:bg-neutral-700 rounded-full flex items-center justify-center">
+                <span className="text-4xl">🏀</span>
+              </div>
+              <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+                No matches scheduled
+              </h3>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                Check back later for upcoming fixtures
+              </p>
+            </div>
+          )}
         </div>
       </main>
       <Footer />

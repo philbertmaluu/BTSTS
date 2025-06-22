@@ -84,14 +84,87 @@ export interface NewsArticle {
 
 // User types
 export interface User {
-  id: string;
+  id: number;
+  name: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  role: 'admin' | 'statistician' | 'coach' | 'fan';
-  teamId?: string;
+  email_verified_at: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  roles: Role[];
   avatar?: string;
 }
 
 // Theme type
 export type Theme = 'light' | 'dark';
+
+// Team Stats API types
+export interface TeamStats {
+  id: number;
+  team_id: number;
+  games_played: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number;
+  created_at: string;
+  updated_at: string;
+  team: {
+    id: number;
+    name: string;
+    logo: string | null;
+    coach_id: number;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
+export interface TeamStatsResponse {
+  success: boolean;
+  data: TeamStats[];
+}
+
+// Auth API types
+export interface Role {
+  id: number;
+  name: string;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  pivot: {
+    user_id: number;
+    role_id: number;
+  };
+}
+
+export interface ApiUser {
+  id: number;
+  name: string;
+  email: string;
+  email_verified_at: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  roles: Role[];
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: ApiUser;
+    token: string;
+    token_type: string;
+  };
+}
+
+export interface RegisterResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    user: ApiUser;
+    token: string;
+    token_type: string;
+  };
+}

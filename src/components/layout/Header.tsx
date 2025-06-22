@@ -8,7 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 
 export const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -30,29 +30,19 @@ export const Header: React.FC = () => {
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Matches", path: "/matches" },
-<<<<<<< HEAD
-    { name: "Players", path: "/players" },
     { name: "Teams", path: "/teams" },
-    { name: "News", path: "/news" },
-=======
-    { name: "Teams", path: "/teams" },
-    {name: "TeamStandings", path:"/teamstandings"}
->>>>>>> 173d77b0001df2eb41b49b2bab3a04fa8442dc0e
+    { name: "TeamStandings", path: "/teamstandings" },
   ];
 
-  // Add protected routes based on user role
+  // Add protected routes based on user roles
   if (user) {
-    if (user.role === "admin") {
+    if (hasRole("Admin")) {
       navItems.push({ name: "Admin", path: "/admin" });
     }
-    if (user.role === "statistician") {
-<<<<<<< HEAD
-      navItems.push({ name: "Stats", path: "/stats" });
-=======
+    if (hasRole("Statistician")) {
       navItems.push({ name: "Team Standings", path: "/stats" });
->>>>>>> 173d77b0001df2eb41b49b2bab3a04fa8442dc0e
     }
-    if (user.role === "coach") {
+    if (hasRole("Coach")) {
       navItems.push({ name: "Coach", path: "/coach" });
     }
   }
@@ -82,11 +72,7 @@ export const Header: React.FC = () => {
               className="h-8 w-8"
             />
             <span className="text-xl font-display font-bold text-neutral-900 dark:text-white">
-<<<<<<< HEAD
-              HoopStats
-=======
               BDL
->>>>>>> 173d77b0001df2eb41b49b2bab3a04fa8442dc0e
             </span>
           </Link>
 
@@ -133,20 +119,19 @@ export const Header: React.FC = () => {
                   className="flex items-center space-x-2"
                   whileHover={{ scale: 1.05 }}
                 >
-                  {user.avatar ? (
+                  {user?.avatar ? (
                     <img
-                      src={user.avatar}
-                      alt={`${user.firstName} ${user.lastName}`}
+                      src={user?.avatar}
+                      alt={user?.name}
                       className="h-8 w-8 rounded-full object-cover border-2 border-primary-500"
                     />
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center text-white">
-                      {user.firstName[0]}
-                      {user.lastName[0]}
+                      {user?.name?.[0] || ""}
                     </div>
                   )}
                   <span className="hidden md:block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    {user.firstName}
+                    {user?.name || "User"}
                   </span>
                 </motion.button>
 

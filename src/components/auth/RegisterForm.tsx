@@ -1,56 +1,56 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Mail, Lock, User, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { Input } from '../ui/Input';
-import { Button } from '../ui/Button';
-import { Card, CardHeader, CardBody, CardFooter } from '../ui/Card';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Mail, Lock, User, AlertCircle } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { Input } from "../ui/Input";
+import { Button } from "../ui/Button";
+import { Card, CardHeader, CardBody, CardFooter } from "../ui/Card";
 
 export const RegisterForm: React.FC = () => {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [formErrors, setFormErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const { register, isLoading, error } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
   const validate = () => {
-    const errors: Record<string, string> = {};
-    
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
+    const errors: {
+      name?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
+
+    if (!name.trim()) {
+      errors.name = "Name is required";
     }
-    
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required';
+
+    if (!email) {
+      errors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = "Email is invalid";
     }
-    
-    if (!formData.email) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
+
+    if (!password) {
+      errors.password = "Password is required";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
     }
-    
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+
+    if (!confirmPassword) {
+      errors.confirmPassword = "Please confirm your password";
+    } else if (password !== confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
     }
-    
-    if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -59,14 +59,9 @@ export const RegisterForm: React.FC = () => {
     e.preventDefault();
     if (validate()) {
       try {
-        await register(
-          formData.email,
-          formData.password,
-          formData.firstName,
-          formData.lastName
-        );
-        navigate('/dashboard');
-      } catch (err) {
+        await register(email, password, name);
+        navigate("/dashboard");
+      } catch {
         // Error is handled by the AuthContext
       }
     }
@@ -82,10 +77,14 @@ export const RegisterForm: React.FC = () => {
       >
         <Card>
           <CardHeader className="text-center">
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Create an Account</h1>
-            <p className="text-neutral-600 dark:text-neutral-400 mt-2">Join HoopStats and start tracking basketball statistics</p>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+              Create Account
+            </h1>
+            <p className="text-neutral-600 dark:text-neutral-400 mt-2">
+              Join the Basketball Development League
+            </p>
           </CardHeader>
-          
+
           <CardBody>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
@@ -98,70 +97,51 @@ export const RegisterForm: React.FC = () => {
                   {error}
                 </motion.div>
               )}
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  type="text"
-                  name="firstName"
-                  label="First Name"
-                  placeholder="John"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  error={formErrors.firstName}
-                  leftIcon={<User size={18} />}
-                  required
-                />
-                
-                <Input
-                  type="text"
-                  name="lastName"
-                  label="Last Name"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  error={formErrors.lastName}
-                  leftIcon={<User size={18} />}
-                  required
-                />
-              </div>
-              
+
+              <Input
+                type="text"
+                label="Full Name"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                error={formErrors.name}
+                leftIcon={<User size={18} />}
+                required
+              />
+
               <Input
                 type="email"
-                name="email"
                 label="Email"
                 placeholder="you@example.com"
-                value={formData.email}
-                onChange={handleChange}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 error={formErrors.email}
                 leftIcon={<Mail size={18} />}
                 required
               />
-              
+
               <Input
                 type="password"
-                name="password"
                 label="Password"
                 placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 error={formErrors.password}
                 leftIcon={<Lock size={18} />}
-                helperText="Password must be at least 6 characters"
                 required
               />
-              
+
               <Input
                 type="password"
-                name="confirmPassword"
                 label="Confirm Password"
                 placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={handleChange}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 error={formErrors.confirmPassword}
                 leftIcon={<Lock size={18} />}
                 required
               />
-              
+
               <div className="flex items-center">
                 <input
                   id="terms"
@@ -170,28 +150,40 @@ export const RegisterForm: React.FC = () => {
                   className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-neutral-300 rounded"
                   required
                 />
-                <label htmlFor="terms" className="ml-2 block text-sm text-neutral-700 dark:text-neutral-300">
-                  I agree to the{' '}
-                  <Link to="/terms" className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
+                <label
+                  htmlFor="terms"
+                  className="ml-2 block text-sm text-neutral-700 dark:text-neutral-300"
+                >
+                  I agree to the{" "}
+                  <Link
+                    to="/terms"
+                    className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+                  >
                     Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link to="/privacy" className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    to="/privacy"
+                    className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300"
+                  >
                     Privacy Policy
                   </Link>
                 </label>
               </div>
-              
+
               <Button type="submit" className="w-full" isLoading={isLoading}>
                 Create Account
               </Button>
             </form>
           </CardBody>
-          
+
           <CardFooter className="text-center">
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              Already have an account?{' '}
-              <Link to="/login" className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+              >
                 Sign in
               </Link>
             </p>

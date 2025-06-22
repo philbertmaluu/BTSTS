@@ -11,14 +11,12 @@ import {
   Clock,
   Play,
 } from "lucide-react";
-import { Header } from "../components/layout/Header";
-import { Footer } from "../components/layout/Footer";
 import { Card, CardHeader, CardBody } from "../components/ui/Card";
 import { StatsCard } from "../components/stats/StatsCard";
 import { Button } from "../components/ui/Button";
 import { ScoringDrawer } from "../components/scoring/ScoringDrawer";
 import { useAuth } from "../context/AuthContext";
-;
+
 // Match data with local teams
 const currentMatches = [
   {
@@ -117,138 +115,10 @@ const currentMatches = [
     startTime: "2025-06-26T20:00:00",
     venue: "National Indoor Stadium",
   },
-  {
-    id: "7",
-    homeTeam: {
-      name: "Pazi Basketball Club",
-      score: 0,
-      logo: "/images/PAZI.jpeg",
-    },
-    awayTeam: {
-      name: "UDSM Outsiders",
-      score: 0,
-      logo: "/images/UDSM.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-27T19:00:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "8",
-    homeTeam: {
-      name: "Army Basketball Club",
-      score: 0,
-      logo: "/images/ABC.jpeg",
-    },
-    awayTeam: {
-      name: "JKT Basketball Club",
-      score: 0,
-      logo: "/images/JKT.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-28T18:30:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "9",
-    homeTeam: {
-      name: "Chui Basketball Club",
-      score: 0,
-      logo: "/images/CHUI.jpeg",
-    },
-    awayTeam: {
-      name: "KIUT Giants Club",
-      score: 0,
-      logo: "/images/KIUT.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-29T19:30:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "10",
-    homeTeam: {
-      name: "Darcity Basketball Club",
-      score: 0,
-      logo: "/images/DARCITY.jpeg",
-    },
-    awayTeam: {
-      name: "UDSM Outsiders",
-      score: 0,
-      logo: "/images/UDSM.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-30T18:00:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "11",
-    homeTeam: {
-      name: "Pazi Basketball Club",
-      score: 0,
-      logo: "/images/PAZI.jpeg",
-    },
-    awayTeam: {
-      name: "Army Basketball Club",
-      score: 0,
-      logo: "/images/ABC.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-07-01T20:00:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "12",
-    homeTeam: {
-      name: "JKT Basketball Club",
-      score: 0,
-      logo: "/images/JKT.jpeg",
-    },
-    awayTeam: {
-      name: "KIUT Giants Club",
-      score: 0,
-      logo: "/images/KIUT.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-07-02T19:00:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "13",
-    homeTeam: {
-      name: "Chui Basketball Club",
-      score: 0,
-      logo: "/images/CHUI.jpeg",
-    },
-    awayTeam: {
-      name: "UDSM Outsiders",
-      score: 0,
-      logo: "/images/UDSM.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-07-03T18:30:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "14",
-    homeTeam: {
-      name: "Darcity Basketball Club",
-      score: 0,
-      logo: "/images/DARCITY.jpeg",
-    },
-    awayTeam: {
-      name: "Pazi Basketball Club",
-      score: 0,
-      logo: "/images/PAZI.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-07-04T19:30:00",
-    venue: "National Indoor Stadium",
-  },
 ];
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const navigate = useNavigate();
   const [matches, setMatches] = useState(currentMatches);
   const [selectedMatch, setSelectedMatch] = useState<
@@ -552,35 +422,16 @@ export const DashboardPage: React.FC = () => {
   );
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-neutral-50 dark:bg-neutral-900 pt-20">
-        <div className="container mx-auto px-4 py-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white">
-                  Welcome back, {user.firstName}
-                </h1>
-                <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-                  Here's what's happening with your basketball stats today.
-                </p>
-              </div>
-            </div>
-
-            {user.role === "statistician" ? (
-              <StatisticianDashboard />
-            ) : (
-              <DefaultDashboard />
-            )}
-          </motion.div>
-        </div>
-      </main>
-      <Footer />
-    </>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      {hasRole("Statistician") ? (
+        <StatisticianDashboard />
+      ) : (
+        <DefaultDashboard />
+      )}
+    </motion.div>
   );
 };
