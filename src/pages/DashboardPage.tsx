@@ -17,6 +17,7 @@ import { Button } from "../components/ui/Button";
 import { ScoringModal } from "../components/scoring/ScoringModal";
 import { useAuth } from "../context/AuthContext";
 import { post } from "../api/baseApi";
+import { AccountInactive } from "./AccountInactive";
 
 // Match data with local teams
 const currentMatches = [
@@ -133,7 +134,15 @@ export const DashboardPage: React.FC = () => {
     }
   }, [user, navigate]);
 
+  // Check if user is active - if not, show AccountInactive page
   if (!user) return null;
+
+  // Check if user is not active (status is not "approved")
+  const isUserActive = user.status === "approved";
+
+  if (!isUserActive) {
+    return <AccountInactive />;
+  }
 
   const formatMatchDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {

@@ -32,6 +32,7 @@ export const Header: React.FC = () => {
     { name: "Matches", path: "/matches" },
     { name: "Teams", path: "/teams" },
     { name: "TeamStandings", path: "/teamstandings" },
+    { name: "Match Results", path: "/match-results" },
   ];
 
   // Add protected routes based on user roles

@@ -4,7 +4,6 @@ import {
   Routes,
   Route,
   Navigate,
-  Outlet,
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -18,11 +17,12 @@ import { TeamsPage } from "./pages/TeamsPage";
 import { NewsPage } from "./pages/NewsPage";
 import TeamStandingsPage from "./pages/TeamStandings";
 import { NotFoundPage } from "./pages/NotFoundPage";
-import AdminDashboard from "./pages/AdminDashboard";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import { FixturesPage } from "./pages/admin/FixturesPage";
 import { MatchResultsPage } from "./pages/admin/MatchResultsPage";
 import { TeamsPage2 } from "./pages/admin/TeamsPage";
+import { UsersPage } from "./pages/admin/UsersPage";
+import MatchResults from "./pages/MatchResults";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -33,34 +33,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Role-based protected route component
-const RoleProtectedRoute = ({
-  children,
-  allowedRoles,
-}: {
-  children: React.ReactNode;
-  allowedRoles: string[];
-}) => {
-  const { user, hasAnyRole } = useAuth();
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!hasAnyRole(allowedRoles)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
-};
-
 // Dashboard layout wrapper
 const DashboardLayoutWrapper = () => {
   return (
     <ProtectedRoute>
-      <DashboardLayout>
-        <Outlet />
-      </DashboardLayout>
+      <DashboardLayout />
     </ProtectedRoute>
   );
 };
@@ -77,7 +54,7 @@ function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/news" element={<NewsPage />} />
-
+              <Route path="/match-results" element={<MatchResults />} />
               <Route path="/matches" element={<MatchesPage />} />
               <Route path="/teams" element={<TeamsPage />} />
               <Route path="/teamstandings" element={<TeamStandingsPage />} />
@@ -88,6 +65,7 @@ function App() {
                 {/* <Route path="/dashboard/profile" element={<ProfilePage />} /> */}
                 <Route path="/admin/teams" element={<TeamsPage2 />} />
                 <Route path="/admin/fixtures" element={<FixturesPage />} />
+                <Route path="/admin/users" element={<UsersPage />} />
                 <Route
                   path="/admin/match-results"
                   element={<MatchResultsPage />}
@@ -99,14 +77,6 @@ function App() {
                   element={<div>Statistics Page</div>}
                 />
                 <Route path="/scoring" element={<div>Scoring Page</div>} />
-                <Route
-                  path="/admin"
-                  element={
-                    <RoleProtectedRoute allowedRoles={["Admin"]}>
-                      <AdminDashboard />
-                    </RoleProtectedRoute>
-                  }
-                />
               </Route>
 
               {/* Catch all */}

@@ -5,11 +5,8 @@ import {
   Menu,
   //   X,
   Home,
-  
   LogOut,
-
   TrendingUp,
-
   Sun,
   Moon,
   Users,
@@ -21,6 +18,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "../ui/Button";
+import { AccountInactive } from "../../pages/AccountInactive";
 
 interface NavItem {
   name: string;
@@ -37,15 +35,13 @@ const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
 
   const navItems: NavItem[] = [
-
     //statician menu
     {
       name: "Scoring",
       path: "/dashboard",
       icon: <Home size={20} />,
       roles: ["statician"],
-    }, 
-
+    },
 
     //admin menu
     {
@@ -86,7 +82,6 @@ const DashboardLayout: React.FC = () => {
       icon: <User size={20} />,
       roles: ["admin", "statician"],
     },
-
   ];
 
   const filteredNavItems = navItems.filter((item) => {
@@ -168,7 +163,6 @@ const DashboardLayout: React.FC = () => {
         </div>
 
         <div className="space-y-2">
-          
           <Button
             variant="outline"
             size="sm"
@@ -210,6 +204,16 @@ const DashboardLayout: React.FC = () => {
       )}
     </AnimatePresence>
   );
+
+  // Check if user is active - if not, show AccountInactive page
+  if (!user) return null;
+
+  // Check if user is not active (status is not "approved")
+  const isUserActive = user.status === "approved";
+
+  if (!isUserActive) {
+    return <AccountInactive />;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">

@@ -89,6 +89,10 @@ export interface User {
   email: string;
   email_verified_at: string | null;
   status: string;
+  is_active?: boolean;
+  deactivation_reason?: string | null;
+  deactivated_at?: string | null;
+  deactivated_by?: number | null;
   created_at: string;
   updated_at: string;
   roles: Role[];
