@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Minus, Save, Play, Square } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Card, CardHeader, CardBody } from "../ui/Card";
+import { post } from "../../api/baseApi";
+import { getAuthToken } from "../../api/auth";
+import { message } from "antd";
 
 interface MatchStats {
   // Final Scores
@@ -151,15 +154,37 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
     }));
   };
 
-  const saveMatch = () => {
+  const saveMatch = async () => {
     const matchStats: MatchStats = {
       ...stats,
       notes,
       home_team_score: match.homeTeam.score,
       away_team_score: match.awayTeam.score,
     };
-    onSaveMatch(matchStats);
-    onClose();
+    
+    try {
+      // const token = getAuthToken();
+      const token = localStorage.getItem('btsts-token');
+      if (!token) {
+        throw new Error("No authorization token found");
+      }
+
+      const response = await post("/match-results", {
+        token,
+        match_id: match.id,
+        ...matchStats
+      });
+
+      if (response.success) {
+        onSaveMatch(matchStats);
+        onClose();
+      } else {
+        throw new Error(response.message || "Failed to save match results");
+      }
+    } catch (err) {
+      console.error("Error saving match results:", err);
+      // Here you might want to show an error message to the user
+    }
   };
 
   const StatRow = ({

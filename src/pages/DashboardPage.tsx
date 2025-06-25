@@ -16,115 +16,89 @@ import { StatsCard } from "../components/stats/StatsCard";
 import { Button } from "../components/ui/Button";
 import { ScoringModal } from "../components/scoring/ScoringModal";
 import { useAuth } from "../context/AuthContext";
+import { get } from "../api/baseApi";
 
-// Match data with local teams
-const currentMatches = [
-  {
-    id: "1",
+// Define the API response type
+type ApiFixture = {
+  id: number;
+  home_team_id: number;
+  away_team_id: number;
+  fixture_date: string;
+  fixture_time: string;
+  venue: string;
+  status: string;
+  home_team: {
+    id: number;
+    name: string;
+    logo: string | null;
+    coach_id: number;
+    created_at: string;
+    updated_at: string;
+  };
+  away_team: {
+    id: number;
+    name: string;
+    logo: string | null;
+    coach_id: number;
+    created_at: string;
+    updated_at: string;
+  };
+  created_at: string;
+  updated_at: string;
+};
+
+// Define the transformed fixture type for the component
+type Fixture = {
+  id: string;
+  homeTeam: {
+    name: string;
+    score: number;
+    logo: string;
+  };
+  awayTeam: {
+    name: string;
+    score: number;
+    logo: string;
+  };
+  status: string;
+  startTime: string;
+  venue: string;
+};
+
+// Function to transform API data to component format
+const transformApiFixture = (apiFixture: ApiFixture): Fixture => {
+  // Combine date and time into a single datetime string
+  const startTime = `${apiFixture.fixture_date.split('T')[0]}T${apiFixture.fixture_time}:00.000Z`;
+  
+  // Default logo URL for teams without logos
+  const defaultLogo = "https://via.placeholder.com/48x48/3B82F6/FFFFFF?text=BB";
+  
+  return {
+    id: apiFixture.id.toString(),
     homeTeam: {
-      name: "Army Basketball Club",
-      score: 0,
-      logo: "/images/ABC.jpeg",
+      name: apiFixture.home_team.name,
+      score: 0, // Initialize score to 0
+      logo: apiFixture.home_team.logo || defaultLogo,
     },
     awayTeam: {
-      name: "Chui Basketball Club",
-      score: 0,
-      logo: "/images/CHUI.jpeg",
+      name: apiFixture.away_team.name,
+      score: 0, // Initialize score to 0
+      logo: apiFixture.away_team.logo || defaultLogo,
     },
-    status: "scheduled",
-    startTime: "2025-06-21T18:00:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "2",
-    homeTeam: {
-      name: "JKT Basketball Club",
-      score: 0,
-      logo: "/images/JKT.jpeg",
-    },
-    awayTeam: {
-      name: "Darcity Basketball Club",
-      score: 0,
-      logo: "/images/DARCITY.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-22T19:00:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "3",
-    homeTeam: {
-      name: "KIUT Giants Club",
-      score: 0,
-      logo: "/images/KIUT.jpeg",
-    },
-    awayTeam: {
-      name: "Pazi Basketball Club",
-      score: 0,
-      logo: "/images/PAZI.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-23T18:30:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "4",
-    homeTeam: {
-      name: "UDSM Outsiders",
-      score: 0,
-      logo: "/images/UDSM.jpeg",
-    },
-    awayTeam: {
-      name: "Army Basketball Club",
-      score: 0,
-      logo: "/images/ABC.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-24T19:30:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "5",
-    homeTeam: {
-      name: "Chui Basketball Club",
-      score: 0,
-      logo: "/images/CHUI.jpeg",
-    },
-    awayTeam: {
-      name: "JKT Basketball Club",
-      score: 0,
-      logo: "/images/JKT.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-25T18:00:00",
-    venue: "National Indoor Stadium",
-  },
-  {
-    id: "6",
-    homeTeam: {
-      name: "Darcity Basketball Club",
-      score: 0,
-      logo: "/images/DARCITY.jpeg",
-    },
-    awayTeam: {
-      name: "KIUT Giants Club",
-      score: 0,
-      logo: "/images/KIUT.jpeg",
-    },
-    status: "scheduled",
-    startTime: "2025-06-26T20:00:00",
-    venue: "National Indoor Stadium",
-  },
-];
+    status: apiFixture.status.toLowerCase(), // Convert to lowercase to match component expectations
+    startTime: startTime,
+    venue: apiFixture.venue,
+  };
+};
 
 export const DashboardPage: React.FC = () => {
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
-  const [matches, setMatches] = useState(currentMatches);
-  const [selectedMatch, setSelectedMatch] = useState<
-    (typeof currentMatches)[0] | null
-  >(null);
+  const [matches, setMatches] = useState<Fixture[]>([]);
+  const [selectedMatch, setSelectedMatch] = useState<Fixture | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -132,7 +106,57 @@ export const DashboardPage: React.FC = () => {
     }
   }, [user, navigate]);
 
+  // Fetch fixtures from API on mount
+  useEffect(() => {
+    const fetchFixtures = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Updated to handle the actual API response structure
+        const response = await get<{ success: boolean; data: ApiFixture[] }>("/fixtures");
+
+        console.log("API response:", response);
+
+        if (response && response.success && response.data) {
+          // Transform API data to match component expectations
+          const transformedFixtures = response.data.map(transformApiFixture);
+          setMatches(transformedFixtures);
+        } else {
+          setMatches([]);
+        }
+      } catch (err) {
+        console.error("Error fetching fixtures:", err);
+        setError("Failed to load fixtures. Please try again later.");
+        setMatches([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchFixtures();
+  }, []);
+
   if (!user) return null;
+  if (loading) return (
+    <div className="p-8 text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
+      Loading fixtures...
+    </div>
+  );
+  if (error) return (
+    <div className="p-8 text-center">
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <p className="text-red-600 dark:text-red-400">{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-2 text-sm text-red-500 hover:text-red-700 underline"
+        >
+          Try Again
+        </button>
+      </div>
+    </div>
+  );
 
   const formatMatchDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {
@@ -145,7 +169,7 @@ export const DashboardPage: React.FC = () => {
     });
   };
 
-  const handleStartScoring = (match: (typeof currentMatches)[0]) => {
+  const handleStartScoring = (match: Fixture) => {
     setSelectedMatch(match);
     setIsModalOpen(true);
   };
@@ -154,7 +178,7 @@ export const DashboardPage: React.FC = () => {
     if (!selectedMatch) return;
 
     setMatches(
-      currentMatches.map((match) => {
+      matches.map((match) => {
         if (match.id === selectedMatch.id) {
           return {
             ...match,
@@ -232,7 +256,7 @@ export const DashboardPage: React.FC = () => {
     // Update the match status in the local state
     if (selectedMatch) {
       setMatches(
-        currentMatches.map((match) => {
+        matches.map((match) => {
           if (match.id === selectedMatch.id) {
             return {
               ...match,
@@ -249,109 +273,146 @@ export const DashboardPage: React.FC = () => {
     setSelectedMatch(null);
   };
 
+  const getStatusBadge = (status: string) => {
+    const statusStyles = {
+      scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+      live: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
+      completed: "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400",
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[status as keyof typeof statusStyles] || statusStyles.scheduled}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
   const StatisticianDashboard = () => (
     <div className="space-y-8">
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-              Current Matches
-            </h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+                Current Matches
+              </h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                {matches.length} fixture{matches.length !== 1 ? 's' : ''} loaded
+              </p>
+            </div>
           </CardHeader>
           <CardBody>
-            <div className="space-y-4">
-              {matches.map((match) => (
-                <div
-                  key={match.id}
-                  className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center">
-                        <img
-                          src={match.homeTeam.logo}
-                          alt={match.homeTeam.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div className="ml-3">
-                          <p className="font-semibold text-neutral-900 dark:text-white">
-                            {match.homeTeam.name}
-                          </p>
-                          <p className="text-2xl font-bold text-primary-500">
-                            {match.homeTeam.score}
-                          </p>
+            {matches.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
+                <p className="text-neutral-500 dark:text-neutral-400">No fixtures scheduled</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {matches.map((match) => (
+                  <div
+                    key={match.id}
+                    className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center">
+                          {/* <img
+                            src={match.homeTeam.logo}
+                            alt={match.homeTeam.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "https://via.placeholder.com/48x48/3B82F6/FFFFFF?text=BB";
+                            }}
+                          /> */}
+                          <div className="ml-3">
+                            <p className="font-semibold text-neutral-900 dark:text-white">
+                              {match.homeTeam.name}
+                            </p>
+                            <p className="text-2xl font-bold text-primary-500">
+                              {match.homeTeam.score}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-neutral-500 dark:text-neutral-400 text-lg font-semibold">
+                          VS
+                        </div>
+                        <div className="flex items-center">
+                          <div className="mr-3 text-right">
+                            <p className="font-semibold text-neutral-900 dark:text-white">
+                              {match.awayTeam.name}
+                            </p>
+                            <p className="text-2xl font-bold text-primary-500">
+                              {match.awayTeam.score}
+                            </p>
+                          </div>
+                          {/* <img
+                            src={match.awayTeam.logo}
+                            alt={match.awayTeam.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "https://via.placeholder.com/48x48/3B82F6/FFFFFF?text=BB";
+                            }}
+                          /> */}
                         </div>
                       </div>
-                      <div className="text-neutral-500 dark:text-neutral-400 text-lg font-semibold">
-                        VS
-                      </div>
-                      <div className="flex items-center">
-                        <div className="mr-3 text-right">
-                          <p className="font-semibold text-neutral-900 dark:text-white">
-                            {match.awayTeam.name}
-                          </p>
-                          <p className="text-2xl font-bold text-primary-500">
-                            {match.awayTeam.score}
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-center space-x-2 mb-2">
+                          {getStatusBadge(match.status)}
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                            {formatMatchDate(match.startTime)}
                           </p>
                         </div>
-                        <img
-                          src={match.awayTeam.logo}
-                          alt={match.awayTeam.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
+                        <Button
+                          leftIcon={<Play size={16} />}
+                          variant={
+                            match.status === "live" ? "primary" : "outline"
+                          }
+                          onClick={() => handleStartScoring(match)}
+                        >
+                          {match.status === "live"
+                            ? "Continue Scoring"
+                            : "Start Scoring"}
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end">
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
-                        {formatMatchDate(match.startTime)}
-                      </p>
-                      <Button
-                        leftIcon={<Play size={16} />}
-                        variant={
-                          match.status === "live" ? "primary" : "outline"
-                        }
-                        onClick={() => handleStartScoring(match)}
-                      >
-                        {match.status === "live"
-                          ? "Continue Scoring"
-                          : "Start Scoring"}
-                      </Button>
+                    <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+                      📍 {match.venue}
                     </div>
                   </div>
-                  <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                    {match.venue}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardBody>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Matches Scored"
-          value="12"
+          title="Total Fixtures"
+          value={matches.length.toString()}
           icon={<Clipboard size={24} />}
           changePercentage={8}
           index={0}
         />
         <StatsCard
-          title="Average Points"
-          value="98.5"
+          title="Live Matches"
+          value={matches.filter(m => m.status === 'live').length.toString()}
           icon={<TrendingUp size={24} />}
           changePercentage={5}
           index={1}
         />
         <StatsCard
-          title="Teams Tracked"
-          value="8"
+          title="Teams"
+          value={new Set([...matches.map(m => m.homeTeam.name), ...matches.map(m => m.awayTeam.name)]).size.toString()}
           icon={<Users size={24} />}
           index={2}
         />
         <StatsCard
           title="Next Match"
-          value="In 2 hours"
+          value={matches.find(m => m.status === 'scheduled') ? "Today" : "TBD"}
           icon={<Calendar size={24} />}
           index={3}
         />
