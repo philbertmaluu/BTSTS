@@ -1,11 +1,13 @@
+const TOKEN_KEY = "btsts-token";
+
 export const setToken = (token: string) => {
-  localStorage.setItem("authToken", token);
+  localStorage.setItem(TOKEN_KEY, token);
 };
 
 export const getAuthToken = () => {
-  return localStorage.getItem("authToken");
+  return localStorage.getItem(TOKEN_KEY);
 };
 
 export const logout = () => {
-  localStorage.removeItem("authToken");
+  localStorage.removeItem(TOKEN_KEY);
 };

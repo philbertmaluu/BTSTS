@@ -12,6 +12,11 @@ import {
 
   Sun,
   Moon,
+  Users,
+  Group,
+  Calendar,
+  CheckCircle,
+  User,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -32,12 +37,56 @@ const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
 
   const navItems: NavItem[] = [
+
+    //statician menu
     {
       name: "Scoring",
       path: "/dashboard",
       icon: <Home size={20} />,
+      roles: ["statician"],
+    }, 
+
+
+    //admin menu
+    {
+      name: "Dashboard",
+      path: "/dashboard",
+      icon: <Home size={20} />,
+      roles: ["admin"],
     },
-      
+    {
+      name: "Manage Teams",
+      path: "/admin/teams",
+      icon: <Group size={20} />,
+      roles: ["admin"],
+    },
+    {
+      name: "Manage Fixtures",
+      path: "/admin/fixtures",
+      icon: <Calendar size={20} />,
+      roles: ["admin"],
+    },
+    {
+      name: "Manage Results",
+      path: "/admin/match-results",
+      icon: <CheckCircle size={20} />,
+      roles: ["admin"],
+    },
+    {
+      name: "Manage Users",
+      path: "/admin/users",
+      icon: <Users size={20} />,
+      roles: ["admin"],
+    },
+
+    //Profile menu for all
+    {
+      name: "Profile",
+      path: "/dashboard/profile",
+      icon: <User size={20} />,
+      roles: ["admin", "statician"],
+    },
+
   ];
 
   const filteredNavItems = navItems.filter((item) => {

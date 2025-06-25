@@ -20,6 +20,9 @@ import TeamStandingsPage from "./pages/TeamStandings";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import { FixturesPage } from "./pages/admin/FixturesPage";
+import { MatchResultsPage } from "./pages/admin/MatchResultsPage";
+import { TeamsPage2 } from "./pages/admin/TeamsPage";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -82,6 +85,14 @@ function App() {
               {/* Dashboard routes (protected) */}
               <Route element={<DashboardLayoutWrapper />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                {/* <Route path="/dashboard/profile" element={<ProfilePage />} /> */}
+                <Route path="/admin/teams" element={<TeamsPage2 />} />
+                <Route path="/admin/fixtures" element={<FixturesPage />} />
+                <Route
+                  path="/admin/match-results"
+                  element={<MatchResultsPage />}
+                />
+                {/* <Route path="/admin/users" element={<UsersPage />} /> */}
 
                 <Route
                   path="/statistics"
