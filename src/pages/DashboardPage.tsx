@@ -14,7 +14,7 @@ import {
 import { Card, CardHeader, CardBody } from "../components/ui/Card";
 import { StatsCard } from "../components/stats/StatsCard";
 import { Button } from "../components/ui/Button";
-import { ScoringDrawer } from "../components/scoring/ScoringDrawer";
+import { ScoringModal } from "../components/scoring/ScoringModal";
 import { useAuth } from "../context/AuthContext";
 
 // Match data with local teams
@@ -124,7 +124,7 @@ export const DashboardPage: React.FC = () => {
   const [selectedMatch, setSelectedMatch] = useState<
     (typeof currentMatches)[0] | null
   >(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -147,7 +147,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleStartScoring = (match: (typeof currentMatches)[0]) => {
     setSelectedMatch(match);
-    setIsDrawerOpen(true);
+    setIsModalOpen(true);
   };
 
   const handleScoreUpdate = (team: "home" | "away", points: number) => {
@@ -187,6 +187,66 @@ export const DashboardPage: React.FC = () => {
         },
       };
     });
+  };
+
+  const handleSaveMatch = (matchStats: {
+    home_team_score: number;
+    away_team_score: number;
+    home_field_goals_made: number;
+    home_field_goals_attempted: number;
+    home_three_pointers_made: number;
+    home_three_pointers_attempted: number;
+    home_free_throws_made: number;
+    home_free_throws_attempted: number;
+    home_assists: number;
+    home_rebounds_offensive: number;
+    home_rebounds_defensive: number;
+    home_rebounds_total: number;
+    home_blocks: number;
+    home_steals: number;
+    home_turnovers: number;
+    home_fouls: number;
+    away_field_goals_made: number;
+    away_field_goals_attempted: number;
+    away_three_pointers_made: number;
+    away_three_pointers_attempted: number;
+    away_free_throws_made: number;
+    away_free_throws_attempted: number;
+    away_assists: number;
+    away_rebounds_offensive: number;
+    away_rebounds_defensive: number;
+    away_rebounds_total: number;
+    away_blocks: number;
+    away_steals: number;
+    away_turnovers: number;
+    away_fouls: number;
+    status: "Scheduled" | "In Progress" | "Completed" | "Cancelled";
+    game_start_time?: string;
+    game_end_time?: string;
+    winner?: "home" | "away";
+    notes?: string;
+  }) => {
+    // Here you would typically save the match data to your backend
+    console.log("Saving match data:", matchStats);
+
+    // Update the match status in the local state
+    if (selectedMatch) {
+      setMatches(
+        currentMatches.map((match) => {
+          if (match.id === selectedMatch.id) {
+            return {
+              ...match,
+              status: "completed",
+            };
+          }
+          return match;
+        })
+      );
+    }
+
+    // Close the modal
+    setIsModalOpen(false);
+    setSelectedMatch(null);
   };
 
   const StatisticianDashboard = () => (
@@ -298,11 +358,12 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {selectedMatch && (
-        <ScoringDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
+        <ScoringModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
           match={selectedMatch}
           onScoreUpdate={handleScoreUpdate}
+          onSaveMatch={handleSaveMatch}
         />
       )}
     </div>
