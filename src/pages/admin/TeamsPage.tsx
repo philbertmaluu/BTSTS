@@ -4,7 +4,7 @@ import { Plus, Edit, Trash2, Search, X } from "lucide-react";
 import { Card, CardBody } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { get, post, del } from "../../api/baseApi";
+import { get, post, put, del } from "../../api/baseApi";
 import toast, { Toaster } from "react-hot-toast";
 
 interface Coach {
@@ -25,6 +25,7 @@ interface Team {
   created_at: string;
   updated_at: string;
   coach: Coach;
+  logo_url?: string;
 }
 
 interface ApiResponse {
@@ -34,8 +35,8 @@ interface ApiResponse {
 
 interface CreateTeamData {
   name: string;
-  logo: string;
-  coach_id: string | number;
+  logo: File | null;
+  coach_id: number;
 }
 
 interface CreateTeamResponse {
@@ -49,14 +50,17 @@ export const TeamsPage2: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [formData, setFormData] = useState<CreateTeamData>({
     name: "",
-    logo: "",
-    coach_id: "",
+    logo: null,
+    coach_id: 1,
   });
-  const [formErrors, setFormErrors] = useState<Partial<CreateTeamData>>({});
+  const [formErrors, setFormErrors] = useState<{
+    name?: string;
+    logo?: string;
+  }>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -98,14 +102,33 @@ export const TeamsPage2: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    const errors: Partial<CreateTeamData> = {};
+    const errors: { name?: string; logo?: string } = {};
 
     if (!formData.name.trim()) {
       errors.name = "Team name is required";
     }
 
-    if (!formData.coach_id) {
-      errors.coach_id = "Coach is required";
+    if (!formData.logo) {
+      errors.logo = "Logo is required";
+    } else {
+      // Validate file type based on backend requirements
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/svg+xml",
+      ];
+      if (!allowedTypes.includes(formData.logo.type)) {
+        errors.logo =
+          "Please select a valid image file (JPEG, PNG, GIF, or SVG)";
+      }
+
+      // Validate file size (2MB limit as per backend)
+      const maxSize = 2 * 1024 * 1024; // 2MB
+      if (formData.logo.size > maxSize) {
+        errors.logo = "File size must be less than 2MB";
+      }
     }
 
     setFormErrors(errors);
@@ -122,25 +145,68 @@ export const TeamsPage2: React.FC = () => {
     setSubmitting(true);
 
     try {
-      // Convert coach_id to number for API
-      const submitData = {
-        ...formData,
-        coach_id:
-          typeof formData.coach_id === "string"
-            ? parseInt(formData.coach_id) || 0
-            : formData.coach_id,
-      };
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("coach_id", formData.coach_id.toString());
 
-      const response = await post<CreateTeamResponse>("/teams", submitData);
+      if (formData.logo) {
+        formDataToSend.append("logo", formData.logo);
+        console.log(
+          "Appending logo file:",
+          formData.logo.name,
+          formData.logo.size,
+          formData.logo.type
+        );
+      }
+
+      // Log FormData contents for debugging
+      console.log("FormData entries:");
+      for (const [key, value] of formDataToSend.entries()) {
+        console.log(
+          "FormData entry:",
+          key,
+          value instanceof File
+            ? `File: ${value.name} (${value.size} bytes)`
+            : value
+        );
+      }
+
+      console.log("Sending request to /teams with FormData...");
+
+      let response;
+      if (editingTeam) {
+        // Use PUT for updates
+        response = await put<CreateTeamResponse>(
+          `/teams/${editingTeam.id}`,
+          formDataToSend
+        );
+      } else {
+        // Use POST for creating new teams
+        response = await post<CreateTeamResponse>("/teams", formDataToSend);
+      }
 
       if (response.success) {
-        toast.success("Team created successfully");
+        toast.success(
+          editingTeam
+            ? "Team updated successfully"
+            : "Team created successfully"
+        );
         setShowAddModal(false);
-        setFormData({ name: "", logo: "", coach_id: "" });
+        setEditingTeam(null);
+        setFormData({ name: "", logo: null, coach_id: 1 });
         setFormErrors({});
+        // Reset file input
+        const fileInput = document.querySelector(
+          'input[type="file"]'
+        ) as HTMLInputElement;
+        if (fileInput) fileInput.value = "";
         await fetchTeams();
       } else {
-        toast.error(response.message || "Failed to create team");
+        toast.error(
+          response.message ||
+            (editingTeam ? "Failed to update team" : "Failed to create team")
+        );
       }
     } catch (error: unknown) {
       console.error("Error creating team:", error);
@@ -173,36 +239,21 @@ export const TeamsPage2: React.FC = () => {
 
   const handleInputChange = (
     field: keyof CreateTeamData,
-    value: string | number
+    value: string | number | File
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (formErrors[field]) {
-      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    if (field === "name" && formErrors.name) {
+      setFormErrors((prev) => ({ ...prev, name: undefined }));
     }
   };
 
   const filteredTeams = (teams || []).filter((team) => {
-    const matchesSearch =
-      team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      team.coach.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || team.coach.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSearch = team.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
-      case "inactive":
-        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -286,16 +337,6 @@ export const TeamsPage2: React.FC = () => {
                     leftIcon={<Search size={16} />}
                   />
                 </div>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="inactive">Inactive</option>
-                </select>
               </div>
             </CardBody>
           </Card>
@@ -318,15 +359,6 @@ export const TeamsPage2: React.FC = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Team
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                      Coach
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                      Coach Email
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                      Coach Status
-                    </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Created
                     </th>
@@ -347,10 +379,10 @@ export const TeamsPage2: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            {team.logo ? (
+                            {team.logo_url ? (
                               <img
                                 className="h-10 w-10 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700"
-                                src={team.logo}
+                                src={team.logo_url}
                                 alt={team.name}
                               />
                             ) : (
@@ -371,25 +403,6 @@ export const TeamsPage2: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-neutral-900 dark:text-white">
-                          {team.coach.name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-neutral-900 dark:text-white">
-                          {team.coach.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            team.coach.status
-                          )}`}
-                        >
-                          {team.coach.status}
-                        </span>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className="text-sm font-semibold text-neutral-900 dark:text-white">
                           {formatDate(team.created_at)}
@@ -401,8 +414,13 @@ export const TeamsPage2: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              // TODO: Implement edit functionality
-                              alert(`Edit team: ${team.name}`);
+                              setEditingTeam(team);
+                              setFormData({
+                                name: team.name,
+                                logo: null,
+                                coach_id: team.coach_id,
+                              });
+                              setShowAddModal(true);
                             }}
                             leftIcon={<Edit size={14} />}
                           >
@@ -446,13 +464,19 @@ export const TeamsPage2: React.FC = () => {
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-                  Add New Team
+                  {editingTeam ? "Edit Team" : "Add New Team"}
                 </h2>
                 <button
                   onClick={() => {
                     setShowAddModal(false);
-                    setFormData({ name: "", logo: "", coach_id: "" });
+                    setEditingTeam(null);
+                    setFormData({ name: "", logo: null, coach_id: 1 });
                     setFormErrors({});
+                    // Reset file input
+                    const fileInput = document.querySelector(
+                      'input[type="file"]'
+                    ) as HTMLInputElement;
+                    if (fileInput) fileInput.value = "";
                   }}
                   className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
                 >
@@ -480,32 +504,39 @@ export const TeamsPage2: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Logo URL (optional)
+                    Logo *
                   </label>
-                  <Input
-                    value={formData.logo}
-                    onChange={(e) => handleInputChange("logo", e.target.value)}
-                    placeholder="Enter logo URL"
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      console.log(e.target.files);
+                      if (e.target.files && e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        handleInputChange("logo", file);
+                      }
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      formErrors.logo
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-neutral-600"
+                    }`}
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Coach ID *
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.coach_id || ""}
-                    onChange={(e) =>
-                      handleInputChange("coach_id", e.target.value)
-                    }
-                    placeholder="Enter coach ID"
-                    className={formErrors.coach_id ? "border-red-500" : ""}
-                  />
-                  {formErrors.coach_id && (
+                  {formErrors.logo && (
                     <p className="text-red-500 text-sm mt-1">
-                      {formErrors.coach_id}
+                      {formErrors.logo}
                     </p>
+                  )}
+                  {formData.logo && (
+                    <div className="mt-2 p-2 bg-neutral-50 dark:bg-neutral-700 rounded-lg">
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                        Selected: {formData.logo.name}
+                      </p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-500">
+                        Size: {(formData.logo.size / 1024).toFixed(1)} KB |
+                        Type: {formData.logo.type}
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -515,15 +546,27 @@ export const TeamsPage2: React.FC = () => {
                     disabled={submitting}
                     className="flex-1"
                   >
-                    {submitting ? "Creating..." : "Create Team"}
+                    {submitting
+                      ? editingTeam
+                        ? "Updating..."
+                        : "Creating..."
+                      : editingTeam
+                      ? "Update Team"
+                      : "Create Team"}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => {
                       setShowAddModal(false);
-                      setFormData({ name: "", logo: "", coach_id: "" });
+                      setEditingTeam(null);
+                      setFormData({ name: "", logo: null, coach_id: 1 });
                       setFormErrors({});
+                      // Reset file input
+                      const fileInput = document.querySelector(
+                        'input[type="file"]'
+                      ) as HTMLInputElement;
+                      if (fileInput) fileInput.value = "";
                     }}
                     disabled={submitting}
                   >

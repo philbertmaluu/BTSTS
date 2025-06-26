@@ -15,15 +15,18 @@ interface Fixture {
     id: number;
     name: string;
     logo?: string;
+    logo_url?: string;
   };
   away_team: {
     id: number;
     name: string;
     logo?: string;
+    logo_url?: string;
   };
-  scheduled_date: string;
+  fixture_date: string;
+  fixture_time: string;
   venue: string;
-  status: "scheduled" | "in_progress" | "completed" | "cancelled";
+  status: "Scheduled" | "In Progress" | "Completed" | "Cancelled";
   season_id: number;
   created_at: string;
   updated_at: string;
@@ -33,6 +36,7 @@ interface Team {
   id: number;
   name: string;
   logo?: string;
+  logo_url?: string;
 }
 
 interface CreateFixtureData {
@@ -60,6 +64,7 @@ export const FixturesPage: React.FC = () => {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [teamsLoading, setTeamsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -105,15 +110,29 @@ export const FixturesPage: React.FC = () => {
 
   const fetchTeams = async () => {
     try {
+      setTeamsLoading(true);
       const response = await get<Team[]>("/teams");
+      // Handle different response formats
       if (Array.isArray(response)) {
         setTeams(response);
+      } else if (
+        response &&
+        typeof response === "object" &&
+        "data" in response
+      ) {
+        // Handle wrapped response format
+        const responseData = response as { data: Team[] };
+        setTeams(Array.isArray(responseData.data) ? responseData.data : []);
       } else {
+        console.error("Unexpected teams response format:", response);
         setTeams([]);
       }
     } catch (error) {
       console.error("Error fetching teams:", error);
       setTeams([]);
+      toast.error("Failed to load teams");
+    } finally {
+      setTeamsLoading(false);
     }
   };
 
@@ -257,7 +276,7 @@ export const FixturesPage: React.FC = () => {
 
   const openEditModal = (fixture: Fixture) => {
     setEditingFixture(fixture);
-    const scheduledDate = new Date(fixture.scheduled_date);
+    const scheduledDate = new Date(fixture.fixture_date);
     setFormData({
       home_team_id: fixture.home_team_id,
       away_team_id: fixture.away_team_id,
@@ -280,10 +299,10 @@ export const FixturesPage: React.FC = () => {
   });
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "scheduled":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-      case "in_progress":
+      case "in progress":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
       case "completed":
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
@@ -294,15 +313,27 @@ export const FixturesPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (dateString: string, timeString?: string) => {
+    const date = new Date(dateString);
+
+    if (isNaN(date.getTime())) {
+      return "Invalid Date";
+    }
+
+    const dateOptions: Intl.DateTimeFormatOptions = {
       weekday: "short",
       year: "numeric",
       month: "short",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    };
+
+    const formattedDate = date.toLocaleDateString("en-US", dateOptions);
+
+    if (timeString) {
+      return `${formattedDate} at ${timeString}`;
+    }
+
+    return formattedDate;
   };
 
   if (loading) {
@@ -385,10 +416,10 @@ export const FixturesPage: React.FC = () => {
                   className="px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="all">All Status</option>
-                  <option value="scheduled">Scheduled</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="Scheduled">Scheduled</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
             </CardBody>
@@ -439,9 +470,9 @@ export const FixturesPage: React.FC = () => {
                         <div className="flex items-center space-x-4">
                           {/* Home Team */}
                           <div className="flex items-center space-x-3">
-                            {fixture.home_team.logo ? (
+                            {fixture.home_team.logo_url ? (
                               <img
-                                src={fixture.home_team.logo}
+                                src={fixture.home_team.logo_url}
                                 alt={fixture.home_team.name}
                                 className="w-10 h-10 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700"
                               />
@@ -477,9 +508,9 @@ export const FixturesPage: React.FC = () => {
                                 Away
                               </div>
                             </div>
-                            {fixture.away_team.logo ? (
+                            {fixture.away_team.logo_url ? (
                               <img
-                                src={fixture.away_team.logo}
+                                src={fixture.away_team.logo_url}
                                 alt={fixture.away_team.name}
                                 className="w-10 h-10 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700"
                               />
@@ -495,7 +526,10 @@ export const FixturesPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-neutral-900 dark:text-white">
-                          {formatDate(fixture.scheduled_date)}
+                          {formatDate(
+                            fixture.fixture_date,
+                            fixture.fixture_time
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -509,7 +543,7 @@ export const FixturesPage: React.FC = () => {
                             fixture.status
                           )}`}
                         >
-                          {fixture.status.replace("_", " ")}
+                          {fixture.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -597,8 +631,16 @@ export const FixturesPage: React.FC = () => {
                         ? "border-red-500"
                         : "border-neutral-300 dark:border-neutral-600"
                     }`}
+                    disabled={teamsLoading}
                   >
-                    <option value="">Select Home Team</option>
+                    <option value="">
+                      {teamsLoading ? "Loading teams..." : "Select Home Team"}
+                    </option>
+                    {teams.length === 0 && !teamsLoading && (
+                      <option value="" disabled>
+                        No teams available
+                      </option>
+                    )}
                     {teams.map((team) => (
                       <option key={team.id} value={team.id}>
                         {team.name}
@@ -626,8 +668,16 @@ export const FixturesPage: React.FC = () => {
                         ? "border-red-500"
                         : "border-neutral-300 dark:border-neutral-600"
                     }`}
+                    disabled={teamsLoading}
                   >
-                    <option value="">Select Away Team</option>
+                    <option value="">
+                      {teamsLoading ? "Loading teams..." : "Select Away Team"}
+                    </option>
+                    {teams.length === 0 && !teamsLoading && (
+                      <option value="" disabled>
+                        No teams available
+                      </option>
+                    )}
                     {teams.map((team) => (
                       <option key={team.id} value={team.id}>
                         {team.name}

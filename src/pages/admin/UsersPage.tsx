@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, Search, User, Mail, X } from "lucide-react";
+import { Edit, Trash2, Search, User, Mail, X } from "lucide-react";
 import { Card, CardBody } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -443,12 +443,12 @@ export const UsersPage: React.FC = () => {
                 Create, edit, and manage user accounts and permissions
               </p>
             </div>
-            <Button
+            {/* <Button
               onClick={() => setShowAddModal(true)}
               leftIcon={<Plus size={16} />}
             >
               Add User
-            </Button>
+            </Button> */}
           </div>
 
           {/* Filters */}
@@ -641,31 +641,38 @@ export const UsersPage: React.FC = () => {
                             )}
 
                             {/* Activation/Deactivation buttons for approved users */}
-                            {user.status === "approved" && (
-                              <>
-                                {user.is_active ? (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleDeactivateUser(user.id)
-                                    }
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    Deactivate
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleActivateUser(user.id)}
-                                    className="text-green-600 hover:text-green-700"
-                                  >
-                                    Activate
-                                  </Button>
-                                )}
-                              </>
-                            )}
+
+                            {/*if user role is admin do not show deactivate button */}
+                            {user.status === "approved" &&
+                              !user.roles.some(
+                                (role) => role.name === "Admin"
+                              ) && (
+                                <>
+                                  {user.is_active ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleDeactivateUser(user.id)
+                                      }
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      Deactivate
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleActivateUser(user.id)
+                                      }
+                                      className="text-green-600 hover:text-green-700"
+                                    >
+                                      Activate
+                                    </Button>
+                                  )}
+                                </>
+                              )}
 
                             <Button
                               variant="outline"
@@ -675,15 +682,21 @@ export const UsersPage: React.FC = () => {
                             >
                               Edit
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteUser(user.id)}
-                              leftIcon={<Trash2 size={14} />}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              Delete
-                            </Button>
+                            {/*if user role is admin do not show delete button */}
+                            {user.status === "approved" &&
+                              !user.roles.some(
+                                (role) => role.name === "Admin"
+                              ) && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  leftIcon={<Trash2 size={14} />}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  Delete
+                                </Button>
+                              )}
                           </div>
                         </td>
                       </motion.tr>
@@ -794,7 +807,7 @@ export const UsersPage: React.FC = () => {
                   )}
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     Roles *
                   </label>
@@ -833,7 +846,7 @@ export const UsersPage: React.FC = () => {
                       {formErrors.role_ids}
                     </p>
                   )}
-                </div>
+                </div> */}
 
                 <div className="flex space-x-3 pt-4">
                   <Button

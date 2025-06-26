@@ -52,16 +52,58 @@ export async function get<T = unknown>(url: string, config?: AxiosRequestConfig)
 }
 
 export async function post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  // If data is FormData, don't set Content-Type header to let browser set it with boundary
+  if (data instanceof FormData) {
+    const response: AxiosResponse<T> = await api.post(url, data, {
+      ...config,
+      headers: {
+        ...config?.headers,
+        // Remove Content-Type to let browser set it automatically for FormData
+        'Content-Type': undefined,
+      },
+    });
+    return response.data;
+  }
+  
+  // For regular JSON data, use default behavior
   const response: AxiosResponse<T> = await api.post(url, data, config);
   return response.data;
 }
 
 export async function put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  // If data is FormData, don't set Content-Type header to let browser set it with boundary
+  if (data instanceof FormData) {
+    const response: AxiosResponse<T> = await api.put(url, data, {
+      ...config,
+      headers: {
+        ...config?.headers,
+        // Remove Content-Type to let browser set it automatically for FormData
+        'Content-Type': undefined,
+      },
+    });
+    return response.data;
+  }
+  
+  // For regular JSON data, use default behavior
   const response: AxiosResponse<T> = await api.put(url, data, config);
   return response.data;
 }
 
 export async function patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  // If data is FormData, don't set Content-Type header to let browser set it with boundary
+  if (data instanceof FormData) {
+    const response: AxiosResponse<T> = await api.patch(url, data, {
+      ...config,
+      headers: {
+        ...config?.headers,
+        // Remove Content-Type to let browser set it automatically for FormData
+        'Content-Type': undefined,
+      },
+    });
+    return response.data;
+  }
+  
+  // For regular JSON data, use default behavior
   const response: AxiosResponse<T> = await api.patch(url, data, config);
   return response.data;
 }
