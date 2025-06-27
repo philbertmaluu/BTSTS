@@ -40,7 +40,7 @@ const DashboardLayout: React.FC = () => {
       name: "Scoring",
       path: "/dashboard",
       icon: <Home size={20} />,
-      roles: ["statician"],
+      roles: ["Statistician"],
     },
 
     //admin menu
@@ -78,9 +78,9 @@ const DashboardLayout: React.FC = () => {
     //Profile menu for all
     {
       name: "Profile",
-      path: "/dashboard/profile",
+      path: "/profile",
       icon: <User size={20} />,
-      roles: ["admin", "statician"],
+      roles: ["admin", "Statistician"],
     },
   ];
 

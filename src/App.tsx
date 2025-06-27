@@ -66,6 +66,7 @@ function App() {
                 <Route path="/admin/teams" element={<TeamsPage2 />} />
                 <Route path="/admin/fixtures" element={<FixturesPage />} />
                 <Route path="/admin/users" element={<UsersPage />} />
+                {/* <Route path="/profile" element={<ProfilePage />} /> */}
                 <Route
                   path="/admin/match-results"
                   element={<MatchResultsPage />}

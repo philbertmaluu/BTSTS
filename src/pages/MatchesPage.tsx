@@ -9,6 +9,7 @@ interface Team {
   id: number;
   name: string;
   logo: string | null;
+  logo_url?: string;
   coach_id: number;
   created_at: string;
   updated_at: string;
@@ -32,19 +33,6 @@ interface ApiResponse {
   success: boolean;
   data: Match[];
 }
-
-// Team logo mapping
-const teamLogos: { [key: string]: string } = {
-  "Army Basketball Club": "/images/ABC.jpeg",
-  "Chui Basketball Club": "/images/CHUI.jpeg",
-  "JKT Basketball Club": "/images/JKT.jpeg",
-  "Jkt Basketball Club": "/images/JKT.jpeg",
-  "Darcity Basketball Club": "/images/DARCITY.jpeg",
-  "Dar City Basketball Club": "/images/DARCITY.jpeg",
-  "KIUT Giants Club": "/images/KIUT.jpeg",
-  "Pazi Basketball Club": "/images/PAZI.jpeg",
-  "UDSM Outsiders": "/images/UDSM.jpeg",
-};
 
 export const MatchesPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -119,8 +107,8 @@ export const MatchesPage: React.FC = () => {
   };
 
   // Get team logo
-  const getTeamLogo = (teamName: string) => {
-    return teamLogos[teamName] || "/images/default-team.png";
+  const getTeamLogo = (team: Team) => {
+    return team.logo_url || team.logo || "/images/default-team.png";
   };
 
   if (loading) {
@@ -220,9 +208,25 @@ export const MatchesPage: React.FC = () => {
                         <div className="relative">
                           <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center shadow-lg">
                             <img
-                              src={getTeamLogo(match.home_team.name)}
+                              src={getTeamLogo(match.home_team)}
                               alt={match.home_team.name}
                               className="w-12 h-12 object-contain rounded-full"
+                              onError={(e) => {
+                                // Fallback to team initials if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  const fallback =
+                                    document.createElement("div");
+                                  fallback.className =
+                                    "w-12 h-12 rounded-full bg-white dark:bg-neutral-700 flex items-center justify-center text-orange-500 font-bold text-lg";
+                                  fallback.textContent = match.home_team.name
+                                    .slice(0, 2)
+                                    .toUpperCase();
+                                  parent.appendChild(fallback);
+                                }
+                              }}
                             />
                           </div>
                           <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-neutral-700 rounded-full border-2 border-white dark:border-neutral-700 flex items-center justify-center">
@@ -258,9 +262,25 @@ export const MatchesPage: React.FC = () => {
                         <div className="relative">
                           <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
                             <img
-                              src={getTeamLogo(match.away_team.name)}
+                              src={getTeamLogo(match.away_team)}
                               alt={match.away_team.name}
                               className="w-12 h-12 object-contain rounded-full"
+                              onError={(e) => {
+                                // Fallback to team initials if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  const fallback =
+                                    document.createElement("div");
+                                  fallback.className =
+                                    "w-12 h-12 rounded-full bg-white dark:bg-neutral-700 flex items-center justify-center text-blue-500 font-bold text-lg";
+                                  fallback.textContent = match.away_team.name
+                                    .slice(0, 2)
+                                    .toUpperCase();
+                                  parent.appendChild(fallback);
+                                }
+                              }}
                             />
                           </div>
                           <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-neutral-700 rounded-full border-2 border-white dark:border-neutral-700 flex items-center justify-center">

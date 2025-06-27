@@ -6,16 +6,13 @@ import { Footer } from "../components/layout/Footer";
 import { get } from "../api/baseApi";
 
 interface Team {
-  id: string;
+  id: number;
   name: string;
-  logo: string;
-  // Add any additional fields that might come from the API
-  abbreviation?: string;
-  conference?: string;
-  division?: string;
-  wins?: number;
-  losses?: number;
-  winPercentage?: number;
+  logo?: string;
+  logo_url?: string;
+  coach_id?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const TeamsPage: React.FC = () => {
@@ -41,161 +38,22 @@ export const TeamsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Try to fetch from API first
-      const apiTeams = await get<Team[]>("/teams");
+      // Fetch teams from API
+      const response = await get<{ success: boolean; data: Team[] }>("/teams");
 
-      // If API returns data, use it; otherwise fall back to local data
-      if (apiTeams && apiTeams.length > 0) {
-        setTeams(apiTeams);
+      if (response.success && response.data) {
+        setTeams(response.data);
       } else {
-        // Fallback to local data with local images
-        const fallbackTeams: Team[] = [
-          {
-            id: "1",
-            name: "Army Basketball Club",
-            logo: "/images/ABC.jpeg",
-            abbreviation: "ABC",
-            wins: 12,
-            losses: 8,
-            winPercentage: 0.6,
-          },
-          {
-            id: "2",
-            name: "Chui Basketball Club",
-            logo: "/images/CHUI.jpeg",
-            abbreviation: "CHUI",
-            wins: 15,
-            losses: 5,
-            winPercentage: 0.75,
-          },
-          {
-            id: "3",
-            name: "JKT Basketball Club",
-            logo: "/images/JKT.jpeg",
-            abbreviation: "JKT",
-            wins: 10,
-            losses: 10,
-            winPercentage: 0.5,
-          },
-          {
-            id: "4",
-            name: "Darcity Basketball Club",
-            logo: "/images/DARCITY.jpeg",
-            abbreviation: "DARCITY",
-            wins: 8,
-            losses: 12,
-            winPercentage: 0.4,
-          },
-          {
-            id: "5",
-            name: "KIUT Giants Club",
-            logo: "/images/KIUT.jpeg",
-            abbreviation: "KIUT",
-            wins: 18,
-            losses: 2,
-            winPercentage: 0.9,
-          },
-          {
-            id: "6",
-            name: "Pazi Basketball Club",
-            logo: "/images/PAZI.jpeg",
-            abbreviation: "PAZI",
-            wins: 6,
-            losses: 14,
-            winPercentage: 0.3,
-          },
-          {
-            id: "7",
-            name: "UDSM Outsiders",
-            logo: "/images/UDSM.jpeg",
-            abbreviation: "UDSM",
-            wins: 14,
-            losses: 6,
-            winPercentage: 0.7,
-          },
-        ];
-        setTeams(fallbackTeams);
+        setTeams([]);
+        setError("No teams found.");
       }
     } catch (err) {
       console.error("Error fetching teams:", err);
       setError("Failed to load teams. Please try again later.");
-
-      // Fallback to local data on error
-      const fallbackTeams: Team[] = [
-        {
-          id: "1",
-          name: "Army Basketball Club",
-          logo: "/images/ABC.jpeg",
-          abbreviation: "ABC",
-          wins: 12,
-          losses: 8,
-          winPercentage: 0.6,
-        },
-        {
-          id: "2",
-          name: "Chui Basketball Club",
-          logo: "/images/CHUI.jpeg",
-          abbreviation: "CHUI",
-          wins: 15,
-          losses: 5,
-          winPercentage: 0.75,
-        },
-        {
-          id: "3",
-          name: "JKT Basketball Club",
-          logo: "/images/JKT.jpeg",
-          abbreviation: "JKT",
-          wins: 10,
-          losses: 10,
-          winPercentage: 0.5,
-        },
-        {
-          id: "4",
-          name: "Darcity Basketball Club",
-          logo: "/images/DARCITY.jpeg",
-          abbreviation: "DARCITY",
-          wins: 8,
-          losses: 12,
-          winPercentage: 0.4,
-        },
-        {
-          id: "5",
-          name: "KIUT Giants Club",
-          logo: "/images/KIUT.jpeg",
-          abbreviation: "KIUT",
-          wins: 18,
-          losses: 2,
-          winPercentage: 0.9,
-        },
-        {
-          id: "6",
-          name: "Pazi Basketball Club",
-          logo: "/images/PAZI.jpeg",
-          abbreviation: "PAZI",
-          wins: 6,
-          losses: 14,
-          winPercentage: 0.3,
-        },
-        {
-          id: "7",
-          name: "UDSM Outsiders",
-          logo: "/images/UDSM.jpeg",
-          abbreviation: "UDSM",
-          wins: 14,
-          losses: 6,
-          winPercentage: 0.7,
-        },
-      ];
-      setTeams(fallbackTeams);
+      setTeams([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getWinPercentageColor = (percentage: number) => {
-    if (percentage >= 0.7) return "text-green-500";
-    if (percentage >= 0.5) return "text-yellow-500";
-    return "text-red-500";
   };
 
   const getTeamCardGradient = (index: number) => {
@@ -314,16 +172,10 @@ export const TeamsPage: React.FC = () => {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                      Top Team
+                      Total Teams
                     </p>
                     <p className="text-lg font-bold text-neutral-900 dark:text-white">
-                      {teams.find(
-                        (t) =>
-                          t.winPercentage ===
-                          Math.max(
-                            ...teams.map((team) => team.winPercentage || 0)
-                          )
-                      )?.name || "N/A"}
+                      {teams.length}
                     </p>
                   </div>
                 </div>
@@ -378,14 +230,28 @@ export const TeamsPage: React.FC = () => {
                       <div className="flex justify-center mb-4">
                         <div className="relative">
                           <img
-                            src={team.logo}
+                            src={team.logo_url || team.logo}
                             alt={team.name}
                             className="w-20 h-20 object-cover rounded-full border-4 border-white dark:border-neutral-700 shadow-lg group-hover:scale-110 transition-transform duration-300"
+                            onError={(e) => {
+                              // Fallback to a default image or show initials if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              const parent = target.parentElement;
+                              if (parent) {
+                                const fallback = document.createElement("div");
+                                fallback.className =
+                                  "w-20 h-20 rounded-full border-4 border-white dark:border-neutral-700 shadow-lg bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xl";
+                                fallback.textContent = team.name
+                                  .slice(0, 2)
+                                  .toUpperCase();
+                                parent.appendChild(fallback);
+                              }
+                            }}
                           />
                           <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                             <span className="text-xs font-bold text-white">
-                              {team.abbreviation?.slice(0, 2) ||
-                                team.name.slice(0, 2)}
+                              {team.name.slice(0, 2).toUpperCase()}
                             </span>
                           </div>
                         </div>
@@ -395,32 +261,6 @@ export const TeamsPage: React.FC = () => {
                       <h3 className="text-lg font-bold text-neutral-900 dark:text-white text-center mb-3 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                         {team.name}
                       </h3>
-
-                      {/* Team Stats */}
-                      {team.wins !== undefined && team.losses !== undefined && (
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-neutral-600 dark:text-neutral-400">
-                              Record:
-                            </span>
-                            <span className="font-semibold text-neutral-900 dark:text-white">
-                              {team.wins}-{team.losses}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-neutral-600 dark:text-neutral-400">
-                              Win %:
-                            </span>
-                            <span
-                              className={`font-semibold ${getWinPercentageColor(
-                                team.winPercentage || 0
-                              )}`}
-                            >
-                              {((team.winPercentage || 0) * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
-                      )}
 
                       {/* Hover Effect */}
                       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-primary-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />

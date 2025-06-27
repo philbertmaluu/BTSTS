@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Minus, Save, Play, Square } from "lucide-react";
+import { Save, Play, Square } from "lucide-react";
 import {
   Modal,
   Button as AntButton,
@@ -9,9 +9,11 @@ import {
   Row,
   Col,
   Statistic,
-  Divider,
   Tag,
 } from "antd";
+import toast from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import { Button } from "../ui/Button";
 
 interface MatchStats {
   // Final Scores
@@ -56,6 +58,7 @@ interface MatchStats {
   game_end_time?: string;
   winner?: "home" | "away";
   notes?: string;
+  fixture_id: string;
 }
 
 interface ScoringModalProps {
@@ -113,6 +116,7 @@ const initialStats: MatchStats = {
   away_turnovers: 0,
   away_fouls: 0,
   status: "Scheduled",
+  fixture_id: "",
 };
 
 export const ScoringModal: React.FC<ScoringModalProps> = ({
@@ -127,16 +131,247 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
     "Scheduled" | "In Progress" | "Completed"
   >("Scheduled");
   const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Validation function
+  const validateStats = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    // Check field goals attempted (must be >= 2)
+    if (stats.home_field_goals_attempted < 2) {
+      errors.push("Home team field goals attempted must be at least 2");
+    }
+    if (stats.away_field_goals_attempted < 2) {
+      errors.push("Away team field goals attempted must be at least 2");
+    }
+
+    // Check that made <= attempted for all shooting stats
+    if (stats.home_field_goals_made > stats.home_field_goals_attempted) {
+      errors.push("Home team field goals made cannot exceed attempted");
+    }
+    if (stats.away_field_goals_made > stats.away_field_goals_attempted) {
+      errors.push("Away team field goals made cannot exceed attempted");
+    }
+    if (stats.home_three_pointers_made > stats.home_three_pointers_attempted) {
+      errors.push("Home team 3-pointers made cannot exceed attempted");
+    }
+    if (stats.away_three_pointers_made > stats.away_three_pointers_attempted) {
+      errors.push("Away team 3-pointers made cannot exceed attempted");
+    }
+    if (stats.home_free_throws_made > stats.home_free_throws_attempted) {
+      errors.push("Home team free throws made cannot exceed attempted");
+    }
+    if (stats.away_free_throws_made > stats.away_free_throws_attempted) {
+      errors.push("Away team free throws made cannot exceed attempted");
+    }
+
+    // Check that rebounds total = offensive + defensive
+    const homeReboundsTotal =
+      stats.home_rebounds_offensive + stats.home_rebounds_defensive;
+    if (stats.home_rebounds_total !== homeReboundsTotal) {
+      errors.push(
+        "Home team total rebounds should equal offensive + defensive rebounds"
+      );
+    }
+    const awayReboundsTotal =
+      stats.away_rebounds_offensive + stats.away_rebounds_defensive;
+    if (stats.away_rebounds_total !== awayReboundsTotal) {
+      errors.push(
+        "Away team total rebounds should equal offensive + defensive rebounds"
+      );
+    }
+
+    return { isValid: errors.length === 0, errors };
+  };
 
   const updateStat = (
     team: "home" | "away",
     stat: keyof MatchStats,
     value: number
   ) => {
-    setStats((prev) => ({
-      ...prev,
-      [stat]: Math.max(0, (prev[stat] as number) + value),
-    }));
+    setStats((prev) => {
+      const newStats = {
+        ...prev,
+        [stat]: Math.max(0, (prev[stat] as number) + value),
+      };
+
+      // Auto-calculate total rebounds when offensive or defensive rebounds change
+      if (
+        stat === "home_rebounds_offensive" ||
+        stat === "home_rebounds_defensive"
+      ) {
+        newStats.home_rebounds_total =
+          newStats.home_rebounds_offensive + newStats.home_rebounds_defensive;
+      }
+      if (
+        stat === "away_rebounds_offensive" ||
+        stat === "away_rebounds_defensive"
+      ) {
+        newStats.away_rebounds_total =
+          newStats.away_rebounds_offensive + newStats.away_rebounds_defensive;
+      }
+
+      return newStats;
+    });
+  };
+
+  // updateStat function removed - now using professional scoring functions below
+
+  // Professional NBA-style scoring functions
+  const addFieldGoal = (
+    team: "home" | "away",
+    isThreePointer: boolean = false
+  ) => {
+    setStats((prev) => {
+      const newStats = { ...prev };
+
+      if (team === "home") {
+        newStats.home_field_goals_made += 1;
+        newStats.home_field_goals_attempted += 1;
+        if (isThreePointer) {
+          newStats.home_three_pointers_made += 1;
+          newStats.home_three_pointers_attempted += 1;
+        }
+        // Update score internally (2 points for regular FG, 3 for three pointer)
+        const points = isThreePointer ? 3 : 2;
+        newStats.home_team_score += points;
+      } else {
+        newStats.away_field_goals_made += 1;
+        newStats.away_field_goals_attempted += 1;
+        if (isThreePointer) {
+          newStats.away_three_pointers_made += 1;
+          newStats.away_three_pointers_attempted += 1;
+        }
+        // Update score internally (2 points for regular FG, 3 for three pointer)
+        const points = isThreePointer ? 3 : 2;
+        newStats.away_team_score += points;
+      }
+
+      return newStats;
+    });
+  };
+
+  const addFreeThrow = (team: "home" | "away", made: boolean) => {
+    setStats((prev) => {
+      const newStats = { ...prev };
+
+      if (team === "home") {
+        newStats.home_free_throws_attempted += 1;
+        if (made) {
+          newStats.home_free_throws_made += 1;
+          newStats.home_team_score += 1;
+        }
+      } else {
+        newStats.away_free_throws_attempted += 1;
+        if (made) {
+          newStats.away_free_throws_made += 1;
+          newStats.away_team_score += 1;
+        }
+      }
+
+      return newStats;
+    });
+  };
+
+  const addMissedShot = (
+    team: "home" | "away",
+    shotType: "field_goal" | "three_pointer" | "free_throw"
+  ) => {
+    setStats((prev) => {
+      const newStats = { ...prev };
+
+      if (team === "home") {
+        if (shotType === "field_goal") {
+          newStats.home_field_goals_attempted += 1;
+        } else if (shotType === "three_pointer") {
+          newStats.home_field_goals_attempted += 1;
+          newStats.home_three_pointers_attempted += 1;
+        } else if (shotType === "free_throw") {
+          newStats.home_free_throws_attempted += 1;
+        }
+      } else {
+        if (shotType === "field_goal") {
+          newStats.away_field_goals_attempted += 1;
+        } else if (shotType === "three_pointer") {
+          newStats.away_field_goals_attempted += 1;
+          newStats.away_three_pointers_attempted += 1;
+        } else if (shotType === "free_throw") {
+          newStats.away_free_throws_attempted += 1;
+        }
+      }
+
+      return newStats;
+    });
+  };
+
+  const addOtherStat = (team: "home" | "away", statType: string) => {
+    setStats((prev) => {
+      const newStats = { ...prev };
+
+      if (team === "home") {
+        switch (statType) {
+          case "assist":
+            newStats.home_assists += 1;
+            break;
+          case "offensive_rebound":
+            newStats.home_rebounds_offensive += 1;
+            newStats.home_rebounds_total =
+              newStats.home_rebounds_offensive +
+              newStats.home_rebounds_defensive;
+            break;
+          case "defensive_rebound":
+            newStats.home_rebounds_defensive += 1;
+            newStats.home_rebounds_total =
+              newStats.home_rebounds_offensive +
+              newStats.home_rebounds_defensive;
+            break;
+          case "block":
+            newStats.home_blocks += 1;
+            break;
+          case "steal":
+            newStats.home_steals += 1;
+            break;
+          case "turnover":
+            newStats.home_turnovers += 1;
+            break;
+          case "foul":
+            newStats.home_fouls += 1;
+            break;
+        }
+      } else {
+        switch (statType) {
+          case "assist":
+            newStats.away_assists += 1;
+            break;
+          case "offensive_rebound":
+            newStats.away_rebounds_offensive += 1;
+            newStats.away_rebounds_total =
+              newStats.away_rebounds_offensive +
+              newStats.away_rebounds_defensive;
+            break;
+          case "defensive_rebound":
+            newStats.away_rebounds_defensive += 1;
+            newStats.away_rebounds_total =
+              newStats.away_rebounds_offensive +
+              newStats.away_rebounds_defensive;
+            break;
+          case "block":
+            newStats.away_blocks += 1;
+            break;
+          case "steal":
+            newStats.away_steals += 1;
+            break;
+          case "turnover":
+            newStats.away_turnovers += 1;
+            break;
+          case "foul":
+            newStats.away_fouls += 1;
+            break;
+        }
+      }
+
+      return newStats;
+    });
   };
 
   const startGame = () => {
@@ -160,92 +395,73 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
     }));
   };
 
-  const saveMatch = () => {
-    const matchStats: MatchStats = {
-      ...stats,
-      notes,
-      home_team_score: match.homeTeam.score,
-      away_team_score: match.awayTeam.score,
-    };
-    onSaveMatch(matchStats);
-    onClose();
-  };
+  const saveMatch = async () => {
+    // Validate stats before saving
+    const validation = validateStats();
+    if (!validation.isValid) {
+      validation.errors.forEach((error) => {
+        toast.error(error);
+      });
+      return;
+    }
 
-  const StatRow = ({
-    label,
-    homeValue,
-    awayValue,
-    onHomeChange,
-    onAwayChange,
-    showPercentage = false,
-  }: {
-    label: string;
-    homeValue: number;
-    awayValue: number;
-    onHomeChange: (value: number) => void;
-    onAwayChange: (value: number) => void;
-    showPercentage?: boolean;
-  }) => (
-    <Row
-      align="middle"
-      style={{ padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}
-    >
-      <Col span={6}>
-        <span style={{ fontWeight: 500, color: "#666" }}>{label}</span>
-      </Col>
-      <Col span={6}>
-        <Space>
-          <AntButton
-            size="small"
-            icon={<Minus size={12} />}
-            onClick={() => onHomeChange(-1)}
-            style={{ width: 32, height: 32, padding: 0 }}
-          />
-          <span style={{ fontWeight: 600, minWidth: 48, textAlign: "center" }}>
-            {homeValue}
-            {showPercentage && homeValue > 0 && (
-              <span style={{ fontSize: "12px", color: "#999", marginLeft: 4 }}>
-                ({((homeValue / (homeValue + awayValue)) * 100).toFixed(1)}%)
-              </span>
-            )}
-          </span>
-          <AntButton
-            size="small"
-            icon={<Plus size={12} />}
-            onClick={() => onHomeChange(1)}
-            style={{ width: 32, height: 32, padding: 0 }}
-          />
-        </Space>
-      </Col>
-      <Col span={6} style={{ textAlign: "center" }}>
-        <span style={{ color: "#999" }}>VS</span>
-      </Col>
-      <Col span={6}>
-        <Space>
-          <AntButton
-            size="small"
-            icon={<Minus size={12} />}
-            onClick={() => onAwayChange(-1)}
-            style={{ width: 32, height: 32, padding: 0 }}
-          />
-          <span style={{ fontWeight: 600, minWidth: 48, textAlign: "center" }}>
-            {awayValue}
-            {showPercentage && awayValue > 0 && (
-              <span style={{ fontSize: "12px", color: "#999", marginLeft: 4 }}>
-                ({((awayValue / (homeValue + awayValue)) * 100).toFixed(1)}%)
-              </span>
-            )}
-          </span>
-          <AntButton
-            size="small"
-            icon={<Plus size={12} />}
-            onClick={() => onAwayChange(1)}
-            style={{ width: 32, height: 32, padding: 0 }}
-          />
-        </Space>
-      </Col>
-    </Row>
-  );
+    setSaving(true);
+
+    try {
+      const matchStats: MatchStats = {
+        ...stats,
+        notes,
+        fixture_id: match.id,
+        home_team_score:
+          (stats.home_field_goals_made - stats.home_three_pointers_made) * 2 +
+          stats.home_three_pointers_made * 3 +
+          stats.home_free_throws_made,
+        away_team_score:
+          (stats.away_field_goals_made - stats.away_three_pointers_made) * 2 +
+          stats.away_three_pointers_made * 3 +
+          stats.away_free_throws_made,
+      };
+
+      await onSaveMatch(matchStats);
+      toast.success("Match saved successfully!");
+      onClose();
+    } catch (error: unknown) {
+      console.error("Error saving match:", error);
+
+      // Handle API validation errors
+      if (error && typeof error === "object" && "response" in error) {
+        const apiError = error as {
+          response?: {
+            data?: {
+              errors?: Record<string, string[]>;
+              message?: string;
+            };
+          };
+        };
+
+        if (apiError.response?.data?.errors) {
+          const apiErrors = apiError.response.data.errors;
+          Object.keys(apiErrors).forEach((field) => {
+            apiErrors[field].forEach((errorMessage: string) => {
+              toast.error(
+                `${field
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (l) => l.toUpperCase())}: ${errorMessage}`
+              );
+            });
+          });
+        } else if (apiError.response?.data?.message) {
+          toast.error(apiError.response.data.message);
+        } else {
+          toast.error("Failed to save match. Please try again.");
+        }
+      } else {
+        toast.error("Failed to save match. Please try again.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -261,364 +477,978 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
   };
 
   return (
-    <Modal
-      title={
-        <div>
-          <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>
-            Match Scoring
-          </h2>
-          <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "#666" }}>
-            {match.venue} • {new Date(match.startTime).toLocaleString()}
-          </p>
-        </div>
-      }
-      open={isOpen}
-      onCancel={onClose}
-      width={1200}
-      footer={[
-        <AntButton key="cancel" onClick={onClose}>
-          Cancel
-        </AntButton>,
-        <AntButton
-          key="save"
-          type="primary"
-          onClick={saveMatch}
-          icon={<Save size={16} />}
-        >
-          Save Match
-        </AntButton>,
-      ]}
-      style={{ top: 20 }}
-    >
-      <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
-        {/* Header with Game Status */}
-        <div
-          style={{
-            marginBottom: 24,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Tag
-            color={getStatusColor(gameStatus)}
-            style={{ fontSize: "14px", padding: "4px 12px" }}
-          >
-            {gameStatus}
-          </Tag>
-          <Space>
-            {gameStatus === "Scheduled" && (
-              <AntButton
-                type="primary"
-                icon={<Play size={16} />}
-                onClick={startGame}
-                size="small"
-              >
-                Start Game
-              </AntButton>
-            )}
-            {gameStatus === "In Progress" && (
-              <AntButton
-                icon={<Square size={16} />}
-                onClick={endGame}
-                size="small"
-              >
-                End Game
-              </AntButton>
-            )}
-          </Space>
-        </div>
-
-        {/* Score Display */}
-        <Card title="Current Score" style={{ marginBottom: 24 }}>
-          <Row justify="center" align="middle" gutter={32}>
-            <Col span={8} style={{ textAlign: "center" }}>
-              <img
-                src={match.homeTeam.logo}
-                alt={match.homeTeam.name}
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  marginBottom: 8,
-                }}
-              />
-              <h4 style={{ margin: "8px 0", fontWeight: 600 }}>
-                {match.homeTeam.name}
-              </h4>
-              <Statistic
-                value={match.homeTeam.score}
-                valueStyle={{
-                  fontSize: "36px",
-                  fontWeight: "bold",
-                  color: "#1890ff",
-                }}
-              />
-            </Col>
-            <Col span={4} style={{ textAlign: "center" }}>
-              <h2
-                style={{
-                  fontSize: "32px",
-                  fontWeight: "bold",
-                  color: "#999",
-                  margin: 0,
-                }}
-              >
-                VS
-              </h2>
-            </Col>
-            <Col span={8} style={{ textAlign: "center" }}>
-              <img
-                src={match.awayTeam.logo}
-                alt={match.awayTeam.name}
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  marginBottom: 8,
-                }}
-              />
-              <h4 style={{ margin: "8px 0", fontWeight: 600 }}>
-                {match.awayTeam.name}
-              </h4>
-              <Statistic
-                value={match.awayTeam.score}
-                valueStyle={{
-                  fontSize: "36px",
-                  fontWeight: "bold",
-                  color: "#1890ff",
-                }}
-              />
-            </Col>
-          </Row>
-        </Card>
-
-        {/* Quick Score Buttons */}
-        <Card title="Quick Score" style={{ marginBottom: 24 }}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <h4 style={{ textAlign: "center", marginBottom: 16 }}>
-                {match.homeTeam.name}
-              </h4>
-              <Space style={{ width: "100%", justifyContent: "center" }}>
-                {[1, 2, 3].map((points) => (
-                  <AntButton
-                    key={`home-${points}`}
-                    onClick={() => onScoreUpdate("home", points)}
-                    size="large"
-                    style={{ minWidth: 60 }}
-                  >
-                    +{points}
-                  </AntButton>
-                ))}
-              </Space>
-            </Col>
-            <Col span={12}>
-              <h4 style={{ textAlign: "center", marginBottom: 16 }}>
-                {match.awayTeam.name}
-              </h4>
-              <Space style={{ width: "100%", justifyContent: "center" }}>
-                {[1, 2, 3].map((points) => (
-                  <AntButton
-                    key={`away-${points}`}
-                    onClick={() => onScoreUpdate("away", points)}
-                    size="large"
-                    style={{ minWidth: 60 }}
-                  >
-                    +{points}
-                  </AntButton>
-                ))}
-              </Space>
-            </Col>
-          </Row>
-        </Card>
-
-        {/* Detailed Statistics */}
-        <Card title="Detailed Statistics" style={{ marginBottom: 24 }}>
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: "#10B981",
+              secondary: "#fff",
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: "#EF4444",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
+      <Modal
+        title={
           <div>
-            {/* Shooting */}
-            <div style={{ marginBottom: 24 }}>
-              <h4 style={{ marginBottom: 16, fontWeight: 600 }}>Shooting</h4>
-              <StatRow
-                label="Field Goals Made"
-                homeValue={stats.home_field_goals_made}
-                awayValue={stats.away_field_goals_made}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_field_goals_made", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_field_goals_made", value)
-                }
-              />
-              <StatRow
-                label="Field Goals Attempted"
-                homeValue={stats.home_field_goals_attempted}
-                awayValue={stats.away_field_goals_attempted}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_field_goals_attempted", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_field_goals_attempted", value)
-                }
-              />
-              <StatRow
-                label="3-Pointers Made"
-                homeValue={stats.home_three_pointers_made}
-                awayValue={stats.away_three_pointers_made}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_three_pointers_made", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_three_pointers_made", value)
-                }
-              />
-              <StatRow
-                label="3-Pointers Attempted"
-                homeValue={stats.home_three_pointers_attempted}
-                awayValue={stats.away_three_pointers_attempted}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_three_pointers_attempted", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_three_pointers_attempted", value)
-                }
-              />
-              <StatRow
-                label="Free Throws Made"
-                homeValue={stats.home_free_throws_made}
-                awayValue={stats.away_free_throws_made}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_free_throws_made", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_free_throws_made", value)
-                }
-              />
-              <StatRow
-                label="Free Throws Attempted"
-                homeValue={stats.home_free_throws_attempted}
-                awayValue={stats.away_free_throws_attempted}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_free_throws_attempted", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_free_throws_attempted", value)
-                }
-              />
-            </div>
-
-            <Divider />
-
-            {/* Other Stats */}
-            <div>
-              <h4 style={{ marginBottom: 16, fontWeight: 600 }}>
-                Other Statistics
-              </h4>
-              <StatRow
-                label="Assists"
-                homeValue={stats.home_assists}
-                awayValue={stats.away_assists}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_assists", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_assists", value)
-                }
-              />
-              <StatRow
-                label="Offensive Rebounds"
-                homeValue={stats.home_rebounds_offensive}
-                awayValue={stats.away_rebounds_offensive}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_rebounds_offensive", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_rebounds_offensive", value)
-                }
-              />
-              <StatRow
-                label="Defensive Rebounds"
-                homeValue={stats.home_rebounds_defensive}
-                awayValue={stats.away_rebounds_defensive}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_rebounds_defensive", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_rebounds_defensive", value)
-                }
-              />
-              <StatRow
-                label="Total Rebounds"
-                homeValue={stats.home_rebounds_total}
-                awayValue={stats.away_rebounds_total}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_rebounds_total", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_rebounds_total", value)
-                }
-              />
-              <StatRow
-                label="Blocks"
-                homeValue={stats.home_blocks}
-                awayValue={stats.away_blocks}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_blocks", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_blocks", value)
-                }
-              />
-              <StatRow
-                label="Steals"
-                homeValue={stats.home_steals}
-                awayValue={stats.away_steals}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_steals", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_steals", value)
-                }
-              />
-              <StatRow
-                label="Turnovers"
-                homeValue={stats.home_turnovers}
-                awayValue={stats.away_turnovers}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_turnovers", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_turnovers", value)
-                }
-              />
-              <StatRow
-                label="Fouls"
-                homeValue={stats.home_fouls}
-                awayValue={stats.away_fouls}
-                onHomeChange={(value) =>
-                  updateStat("home", "home_fouls", value)
-                }
-                onAwayChange={(value) =>
-                  updateStat("away", "away_fouls", value)
-                }
-              />
-            </div>
+            <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>
+              Match Scoring
+            </h2>
+            <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "#666" }}>
+              {match.venue} • {new Date(match.startTime).toLocaleString()}
+            </p>
           </div>
-        </Card>
+        }
+        open={isOpen}
+        onCancel={onClose}
+        width={1200}
+        maskClosable={false}
+        keyboard={false}
+        destroyOnClose={false}
+        footer={[
+          <Button
+            key="cancel"
+            className="mr-2"
+            variant="outline"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="save"
+            variant="primary"
+            onClick={saveMatch}
+            leftIcon={<Save size={16} />}
+            isLoading={saving}
+          >
+            Save Match
+          </Button>,
+        ]}
+        style={{ top: 20 }}
+      >
+        <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+          {/* Header with Game Status */}
+          <div
+            style={{
+              marginBottom: 24,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Tag
+              color={getStatusColor(gameStatus)}
+              style={{ fontSize: "14px", padding: "4px 12px" }}
+            >
+              {gameStatus}
+            </Tag>
 
-        {/* Notes */}
-        <Card title="Match Notes">
-          <Input.TextArea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add any notes about the match..."
-            rows={3}
-            style={{ resize: "none" }}
-          />
-        </Card>
-      </div>
-    </Modal>
+            <Space>
+              {gameStatus === "Scheduled" && (
+                <Button
+                  variant="primary"
+                  leftIcon={<Play size={16} />}
+                  onClick={startGame}
+                  size="sm"
+                >
+                  Start Game
+                </Button>
+              )}
+              {gameStatus === "In Progress" && (
+                <Button
+                  variant="outline"
+                  leftIcon={<Square size={16} />}
+                  onClick={endGame}
+                  size="sm"
+                >
+                  End Game
+                </Button>
+              )}
+            </Space>
+          </div>
+
+          {/* Live Score Display */}
+          <Card title="Live Score" style={{ marginBottom: 24 }}>
+            <Row justify="center" align="middle" gutter={32}>
+              <Col span={8} style={{ textAlign: "center" }}>
+                <img
+                  src={match.homeTeam.logo}
+                  alt={match.homeTeam.name}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    marginBottom: 8,
+                  }}
+                />
+                <h4 style={{ margin: "8px 0", fontWeight: 600 }}>
+                  {match.homeTeam.name}
+                </h4>
+                {/* <Statistic
+                  value={stats.home_team_score}
+                  valueStyle={{
+                    fontSize: "36px",
+                    fontWeight: "bold",
+                  }}
+                /> */}
+
+                <Statistic
+                  value={
+                    (stats.home_field_goals_made -
+                      stats.home_three_pointers_made) *
+                      2 +
+                    stats.home_three_pointers_made * 3 +
+                    stats.home_free_throws_made
+                  }
+                  valueStyle={{
+                    fontSize: "36px",
+                    fontWeight: "bold",
+                  }}
+                />
+              </Col>
+              <Col span={4} style={{ textAlign: "center" }}>
+                <h2
+                  style={{
+                    fontSize: "32px",
+                    fontWeight: "bold",
+                    color: "#999",
+                    margin: 0,
+                  }}
+                >
+                  VS
+                </h2>
+              </Col>
+              <Col span={8} style={{ textAlign: "center" }}>
+                <img
+                  src={match.awayTeam.logo}
+                  alt={match.awayTeam.name}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    marginBottom: 8,
+                  }}
+                />
+                <h4 style={{ margin: "8px 0", fontWeight: 600 }}>
+                  {match.awayTeam.name}
+                </h4>
+                {/* <Statistic
+                  value={stats.away_team_score}
+                  valueStyle={{
+                    fontSize: "36px",
+                    fontWeight: "bold",
+                  }}
+                /> */}
+
+                <Statistic
+                  value={
+                    (stats.away_field_goals_made -
+                      stats.away_three_pointers_made) *
+                      2 +
+                    stats.away_three_pointers_made * 3 +
+                    stats.away_free_throws_made
+                  }
+                  valueStyle={{
+                    fontSize: "36px",
+                    fontWeight: "bold",
+                  }}
+                />
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Old Quick Score section removed - use Professional Scoring below */}
+
+          {/* Professional NBA-Style Scoring Interface */}
+          <Card title="Professional Scoring" style={{ marginBottom: 24 }}>
+            <Row gutter={24}>
+              {/* Home Team Scoring */}
+              <Col span={12}>
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    borderRadius: 12,
+                    padding: 20,
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <h3
+                    style={{
+                      textAlign: "center",
+                      marginBottom: 20,
+                      fontSize: 18,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {match.homeTeam.name}
+                  </h3>
+
+                  {/* Field Goals */}
+                  <div style={{ marginBottom: 16 }}>
+                    <h4
+                      style={{
+                        marginBottom: 12,
+                        fontSize: 14,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Field Goals
+                    </h4>
+                    <Row gutter={8}>
+                      <Col span={8}>
+                        <Button
+                          variant="primary"
+                          size="lg"
+                          onClick={() => addFieldGoal("home", false)}
+                          className="w-full h-12 font-semibold"
+                        >
+                          Made (2pts)
+                        </Button>
+                      </Col>
+                      <Col span={8}>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => addMissedShot("home", "field_goal")}
+                          className="w-full h-12 font-semibold"
+                        >
+                          Missed
+                        </Button>
+                      </Col>
+                      <Col span={8}>
+                        <Button
+                          variant="primary"
+                          size="lg"
+                          onClick={() => addFieldGoal("home", true)}
+                          className="w-full h-12 font-semibold"
+                        >
+                          Made (3pts)
+                        </Button>
+                      </Col>
+                    </Row>
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      <Col span={8}>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => addMissedShot("home", "three_pointer")}
+                          className="w-full h-12 font-semibold"
+                        >
+                          Missed 3pt
+                        </Button>
+                      </Col>
+                      <Col span={8}>
+                        <Button
+                          variant="primary"
+                          size="lg"
+                          onClick={() => addFreeThrow("home", true)}
+                          className="w-full h-12 font-semibold"
+                        >
+                          FT Made
+                        </Button>
+                      </Col>
+                      <Col span={8}>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => addFreeThrow("home", false)}
+                          className="w-full h-12 font-semibold"
+                        >
+                          FT Missed
+                        </Button>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* Other Stats */}
+                  <div>
+                    <h4
+                      style={{
+                        marginBottom: 12,
+                        fontSize: 14,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Other Statistics
+                    </h4>
+                    <Row gutter={8}>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("home", "assist")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Assist
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() =>
+                            addOtherStat("home", "offensive_rebound")
+                          }
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Off Reb
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() =>
+                            addOtherStat("home", "defensive_rebound")
+                          }
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Def Reb
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("home", "block")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Block
+                        </AntButton>
+                      </Col>
+                    </Row>
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("home", "steal")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Steal
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("home", "turnover")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Turnover
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("home", "foul")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Foul
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <div
+                          style={{
+                            background: "#f1f5f9",
+                            borderRadius: 6,
+                            padding: 8,
+                            textAlign: "center",
+                          }}
+                        >
+                          <div style={{ fontSize: 12, color: "#64748b" }}>
+                            Total
+                          </div>
+                          <div style={{ fontSize: 16, fontWeight: 600 }}>
+                            {stats.home_field_goals_made}/
+                            {stats.home_field_goals_attempted}
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                </div>
+              </Col>
+
+              {/* Away Team Scoring */}
+              <Col span={12}>
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    borderRadius: 12,
+                    padding: 20,
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <h3
+                    style={{
+                      textAlign: "center",
+                      marginBottom: 20,
+                      fontSize: 18,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {match.awayTeam.name}
+                  </h3>
+
+                  {/* Field Goals */}
+                  <div style={{ marginBottom: 16 }}>
+                    <h4
+                      style={{
+                        marginBottom: 12,
+                        fontSize: 14,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Field Goals
+                    </h4>
+                    <Row gutter={8}>
+                      <Col span={8}>
+                        <AntButton
+                          type="primary"
+                          size="large"
+                          onClick={() => addFieldGoal("away", false)}
+                          style={{
+                            width: "100%",
+                            height: 50,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Made (2pts)
+                        </AntButton>
+                      </Col>
+                      <Col span={8}>
+                        <AntButton
+                          size="large"
+                          onClick={() => addMissedShot("away", "field_goal")}
+                          style={{
+                            width: "100%",
+                            height: 50,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Missed
+                        </AntButton>
+                      </Col>
+                      <Col span={8}>
+                        <AntButton
+                          type="primary"
+                          size="large"
+                          onClick={() => addFieldGoal("away", true)}
+                          style={{
+                            width: "100%",
+                            height: 50,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Made (3pts)
+                        </AntButton>
+                      </Col>
+                    </Row>
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      <Col span={8}>
+                        <AntButton
+                          size="large"
+                          onClick={() => addMissedShot("away", "three_pointer")}
+                          style={{
+                            width: "100%",
+                            height: 50,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Missed 3pt
+                        </AntButton>
+                      </Col>
+                      <Col span={8}>
+                        <AntButton
+                          size="large"
+                          onClick={() => addFreeThrow("away", true)}
+                          style={{
+                            width: "100%",
+                            height: 50,
+                            fontWeight: 600,
+                          }}
+                        >
+                          FT Made
+                        </AntButton>
+                      </Col>
+                      <Col span={8}>
+                        <AntButton
+                          size="large"
+                          onClick={() => addFreeThrow("away", false)}
+                          style={{
+                            width: "100%",
+                            height: 50,
+                            fontWeight: 600,
+                          }}
+                        >
+                          FT Missed
+                        </AntButton>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* Other Stats */}
+                  <div>
+                    <h4
+                      style={{
+                        marginBottom: 12,
+                        fontSize: 14,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Other Statistics
+                    </h4>
+                    <Row gutter={8}>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("away", "assist")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Assist
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() =>
+                            addOtherStat("away", "offensive_rebound")
+                          }
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Off Reb
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() =>
+                            addOtherStat("away", "defensive_rebound")
+                          }
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Def Reb
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("away", "block")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Block
+                        </AntButton>
+                      </Col>
+                    </Row>
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("away", "steal")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Steal
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("away", "turnover")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Turnover
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <AntButton
+                          size="small"
+                          onClick={() => addOtherStat("away", "foul")}
+                          style={{
+                            width: "100%",
+                            height: 40,
+                            fontSize: 12,
+                          }}
+                        >
+                          Foul
+                        </AntButton>
+                      </Col>
+                      <Col span={6}>
+                        <div
+                          style={{
+                            background: "#f1f5f9",
+                            borderRadius: 6,
+                            padding: 8,
+                            textAlign: "center",
+                          }}
+                        >
+                          <div style={{ fontSize: 12, color: "#64748b" }}>
+                            Total
+                          </div>
+                          <div style={{ fontSize: 16, fontWeight: 600 }}>
+                            {stats.away_field_goals_made}/
+                            {stats.away_field_goals_attempted}
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Live Statistics Display */}
+          <Card title="Live Statistics" style={{ marginBottom: 24 }}>
+            <Row gutter={24}>
+              <Col span={12}>
+                <h4
+                  style={{
+                    textAlign: "center",
+                    marginBottom: 16,
+                    color: "#1e3a8a",
+                  }}
+                >
+                  {match.homeTeam.name}
+                </h4>
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    borderRadius: 8,
+                    padding: 16,
+                    border: "1px solid #e2e8f0",
+                  }}
+                >
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 24,
+                            fontWeight: 700,
+                            color: "#1e3a8a",
+                          }}
+                        >
+                          {stats.home_field_goals_made}/
+                          {stats.home_field_goals_attempted}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>FG</div>
+                      </div>
+                    </Col>
+                    <Col span={8}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 24,
+                            fontWeight: 700,
+                            color: "#f59e0b",
+                          }}
+                        >
+                          {stats.home_three_pointers_made}/
+                          {stats.home_three_pointers_attempted}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>
+                          3PT
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={8}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 24,
+                            fontWeight: 700,
+                            color: "#8b5cf6",
+                          }}
+                        >
+                          {stats.home_free_throws_made}/
+                          {stats.home_free_throws_attempted}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>FT</div>
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row gutter={16} style={{ marginTop: 16 }}>
+                    <Col span={6}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: "#06b6d4",
+                          }}
+                        >
+                          {stats.home_assists}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>
+                          AST
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={6}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: "#16a34a",
+                          }}
+                        >
+                          {stats.home_rebounds_total}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>
+                          REB
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={6}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: "#ea580c",
+                          }}
+                        >
+                          {stats.home_blocks}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>
+                          BLK
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={6}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: "#0891b2",
+                          }}
+                        >
+                          {stats.home_steals}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>
+                          STL
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
+              </Col>
+
+              <Col span={12}>
+                <h4
+                  style={{
+                    textAlign: "center",
+                    marginBottom: 16,
+                    color: "#7c2d12",
+                  }}
+                >
+                  {match.awayTeam.name}
+                </h4>
+                <div
+                  style={{
+                    background: "#fef7ed",
+                    borderRadius: 8,
+                    padding: 16,
+                    border: "1px solid #fed7aa",
+                  }}
+                >
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 24,
+                            fontWeight: 700,
+                            color: "#7c2d12",
+                          }}
+                        >
+                          {stats.away_field_goals_made}/
+                          {stats.away_field_goals_attempted}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#a16207" }}>FG</div>
+                      </div>
+                    </Col>
+                    <Col span={8}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 24,
+                            fontWeight: 700,
+                            color: "#f59e0b",
+                          }}
+                        >
+                          {stats.away_three_pointers_made}/
+                          {stats.away_three_pointers_attempted}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#a16207" }}>
+                          3PT
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={8}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 24,
+                            fontWeight: 700,
+                            color: "#8b5cf6",
+                          }}
+                        >
+                          {stats.away_free_throws_made}/
+                          {stats.away_free_throws_attempted}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#a16207" }}>FT</div>
+                      </div>
+                    </Col>
+                  </Row>
+                  <Row gutter={16} style={{ marginTop: 16 }}>
+                    <Col span={6}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: "#06b6d4",
+                          }}
+                        >
+                          {stats.away_assists}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#a16207" }}>
+                          AST
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={6}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: "#16a34a",
+                          }}
+                        >
+                          {stats.away_rebounds_total}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#a16207" }}>
+                          REB
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={6}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: "#ea580c",
+                          }}
+                        >
+                          {stats.away_blocks}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#a16207" }}>
+                          BLK
+                        </div>
+                      </div>
+                    </Col>
+                    <Col span={6}>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: 18,
+                            fontWeight: 600,
+                            color: "#0891b2",
+                          }}
+                        >
+                          {stats.away_steals}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#a16207" }}>
+                          STL
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* Notes */}
+          <Card title="Match Notes">
+            <Input.TextArea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any notes about the match..."
+              rows={3}
+              style={{ resize: "none" }}
+            />
+          </Card>
+        </div>
+      </Modal>
+    </>
   );
 };

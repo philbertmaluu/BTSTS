@@ -16,13 +16,16 @@ interface MatchResult {
       id: number;
       name: string;
       logo?: string;
+      logo_url?: string;
     };
     away_team: {
       id: number;
       name: string;
       logo?: string;
+      logo_url?: string;
     };
-    scheduled_date: string;
+    fixture_date: string;
+    fixture_time: string;
     venue: string;
   };
   home_team_score: number;
@@ -148,14 +151,47 @@ export const MatchResultsPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const formatDate = (dateString: string, timeString?: string) => {
+    try {
+      let dateToFormat: string;
+
+      if (timeString) {
+        // If we have both date and time, construct the full datetime
+        if (dateString.includes("T")) {
+          dateToFormat = dateString;
+        } else {
+          // Construct the date properly
+          const date = new Date(dateString);
+          if (!isNaN(date.getTime())) {
+            const formattedDate = date.toISOString().split("T")[0];
+            dateToFormat = `${formattedDate}T${timeString}`;
+          } else {
+            dateToFormat = `${dateString}T${timeString}`;
+          }
+        }
+      } else {
+        dateToFormat = dateString;
+      }
+
+      const date = new Date(dateToFormat);
+
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return "Date not available";
+      }
+
+      return date.toLocaleDateString("en-US", {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Date not available";
+    }
   };
 
   const calculateFieldGoalPercentage = (made: number, attempted: number) => {
@@ -274,13 +310,12 @@ export const MatchResultsPage: React.FC = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Match
                     </th>
-                   
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Score
+                    </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Date & Time
                     </th>
-                    {/* <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                      Venue
-                    </th> */}
                     <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Status
                     </th>
@@ -305,19 +340,31 @@ export const MatchResultsPage: React.FC = () => {
                         <div className="flex items-center space-x-4">
                           {/* Home Team */}
                           <div className="flex items-center space-x-3">
-                            {result.fixture.home_team.logo ? (
+                            {result.fixture.home_team.logo_url ? (
                               <img
-                                src={result.fixture.home_team.logo}
+                                src={result.fixture.home_team.logo_url}
                                 alt={result.fixture.home_team.name}
                                 className="w-10 h-10 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = "none";
+                                  target.nextElementSibling?.classList.remove(
+                                    "hidden"
+                                  );
+                                }}
                               />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-2 border-neutral-200 dark:border-neutral-700">
-                                <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
-                                  {result.fixture.home_team.name[0]}
-                                </span>
-                              </div>
-                            )}
+                            ) : null}
+                            <div
+                              className={`w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-2 border-neutral-200 dark:border-neutral-700 ${
+                                result.fixture.home_team.logo_url
+                                  ? "hidden"
+                                  : ""
+                              }`}
+                            >
+                              <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
+                                {result.fixture.home_team.name[0]}
+                              </span>
+                            </div>
                             <div>
                               <div className="text-sm font-semibold text-neutral-900 dark:text-white">
                                 {result.fixture.home_team.name}
@@ -343,37 +390,47 @@ export const MatchResultsPage: React.FC = () => {
                                 Away
                               </div>
                             </div>
-                            {result.fixture.away_team.logo ? (
+                            {result.fixture.away_team.logo_url ? (
                               <img
-                                src={result.fixture.away_team.logo}
+                                src={result.fixture.away_team.logo_url}
                                 alt={result.fixture.away_team.name}
                                 className="w-10 h-10 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = "none";
+                                  target.previousElementSibling?.classList.remove(
+                                    "hidden"
+                                  );
+                                }}
                               />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-2 border-neutral-200 dark:border-neutral-700">
-                                <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
-                                  {result.fixture.away_team.name[0]}
-                                </span>
-                              </div>
-                            )}
+                            ) : null}
+                            <div
+                              className={`w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-2 border-neutral-200 dark:border-neutral-700 ${
+                                result.fixture.away_team.logo_url
+                                  ? "hidden"
+                                  : ""
+                              }`}
+                            >
+                              <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
+                                {result.fixture.away_team.name[0]}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
-                      {/* <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="text-lg font-bold text-neutral-900 dark:text-white">
-                          {result.home_team_score} - {result.away_team_score}
-                        </div>
-                      </td> */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-neutral-900 dark:text-white">
-                          {formatDate(result.fixture.scheduled_date)}
+                          {result.home_team_score} - {result.away_team_score}
                         </div>
                       </td>
-                      {/* <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-neutral-900 dark:text-white">
-                          {result.fixture.venue}
+                          {formatDate(
+                            result.fixture.fixture_date,
+                            result.fixture.fixture_time
+                          )}
                         </div>
-                      </td> */}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -458,11 +515,36 @@ export const MatchResultsPage: React.FC = () => {
               {/* Match Header */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div className="text-center">
-                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-2">
-                    {selectedResult.fixture.home_team.name}
-                  </h3>
-                  <div className="text-4xl font-bold text-primary-600 dark:text-primary-400">
-                    {selectedResult.home_team_score}
+                  <div className="flex flex-col items-center space-y-3">
+                    {selectedResult.fixture.home_team.logo_url ? (
+                      <img
+                        src={selectedResult.fixture.home_team.logo_url}
+                        alt={selectedResult.fixture.home_team.name}
+                        className="w-16 h-16 rounded-full object-cover border-4 border-white dark:border-neutral-700 shadow-lg"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = "none";
+                          target.nextElementSibling?.classList.remove("hidden");
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-4 border-white dark:border-neutral-700 shadow-lg ${
+                        selectedResult.fixture.home_team.logo_url
+                          ? "hidden"
+                          : ""
+                      }`}
+                    >
+                      <span className="text-primary-600 dark:text-primary-400 font-bold text-xl">
+                        {selectedResult.fixture.home_team.name[0]}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-neutral-900 dark:text-white">
+                      {selectedResult.fixture.home_team.name}
+                    </h3>
+                    <div className="text-4xl font-bold text-primary-600 dark:text-primary-400">
+                      {selectedResult.home_team_score}
+                    </div>
                   </div>
                 </div>
                 <div className="text-center flex items-center justify-center">
@@ -471,11 +553,38 @@ export const MatchResultsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-center">
-                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-2">
-                    {selectedResult.fixture.away_team.name}
-                  </h3>
-                  <div className="text-4xl font-bold text-primary-600 dark:text-primary-400">
-                    {selectedResult.away_team_score}
+                  <div className="flex flex-col items-center space-y-3">
+                    {selectedResult.fixture.away_team.logo_url ? (
+                      <img
+                        src={selectedResult.fixture.away_team.logo_url}
+                        alt={selectedResult.fixture.away_team.name}
+                        className="w-16 h-16 rounded-full object-cover border-4 border-white dark:border-neutral-700 shadow-lg"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = "none";
+                          target.previousElementSibling?.classList.remove(
+                            "hidden"
+                          );
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-4 border-white dark:border-neutral-700 shadow-lg ${
+                        selectedResult.fixture.away_team.logo_url
+                          ? "hidden"
+                          : ""
+                      }`}
+                    >
+                      <span className="text-primary-600 dark:text-primary-400 font-bold text-xl">
+                        {selectedResult.fixture.away_team.name[0]}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-neutral-900 dark:text-white">
+                      {selectedResult.fixture.away_team.name}
+                    </h3>
+                    <div className="text-4xl font-bold text-primary-600 dark:text-primary-400">
+                      {selectedResult.away_team_score}
+                    </div>
                   </div>
                 </div>
               </div>

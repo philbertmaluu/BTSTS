@@ -11,6 +11,7 @@ interface Team {
   id: number;
   name: string;
   logo: string | null;
+  logo_url?: string;
   coach_id: number;
   created_at: string;
   updated_at: string;
@@ -77,19 +78,6 @@ interface ApiResponse {
   success: boolean;
   data: MatchResult[];
 }
-
-// Team logo mapping
-const teamLogos: { [key: string]: string } = {
-  "Army Basketball Club": "/images/ABC.jpeg",
-  "Chui Basketball Club": "/images/CHUI.jpeg",
-  "JKT Basketball Club": "/images/JKT.jpeg",
-  "Jkt Basketball Club": "/images/JKT.jpeg",
-  "Darcity Basketball Club": "/images/DARCITY.jpeg",
-  "Dar City Basketball Club": "/images/DARCITY.jpeg",
-  "KIUT Giants Club": "/images/KIUT.jpeg",
-  "Pazi Basketball Club": "/images/PAZI.jpeg",
-  "UDSM Outsiders": "/images/UDSM.jpeg",
-};
 
 export default function MatchResults() {
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
@@ -167,8 +155,8 @@ export default function MatchResults() {
   };
 
   // Get team logo
-  const getTeamLogo = (teamName: string) => {
-    return teamLogos[teamName] || "/images/default-team.png";
+  const getTeamLogo = (team: Team) => {
+    return team.logo_url || team.logo || "/images/default-team.png";
   };
 
   // Calculate field goal percentage
@@ -312,9 +300,26 @@ export default function MatchResults() {
                             }`}
                           >
                             <img
-                              src={getTeamLogo(result.fixture.home_team.name)}
+                              src={getTeamLogo(result.fixture.home_team)}
                               alt={result.fixture.home_team.name}
                               className="w-12 h-12 object-contain rounded-full"
+                              onError={(e) => {
+                                // Fallback to team initials if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  const fallback =
+                                    document.createElement("div");
+                                  fallback.className =
+                                    "w-12 h-12 rounded-full bg-white dark:bg-neutral-700 flex items-center justify-center text-orange-500 font-bold text-lg";
+                                  fallback.textContent =
+                                    result.fixture.home_team.name
+                                      .slice(0, 2)
+                                      .toUpperCase();
+                                  parent.appendChild(fallback);
+                                }
+                              }}
                             />
                           </div>
                           <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-neutral-700 rounded-full border-2 border-white dark:border-neutral-700 flex items-center justify-center">
@@ -362,9 +367,26 @@ export default function MatchResults() {
                             }`}
                           >
                             <img
-                              src={getTeamLogo(result.fixture.away_team.name)}
+                              src={getTeamLogo(result.fixture.away_team)}
                               alt={result.fixture.away_team.name}
                               className="w-12 h-12 object-contain rounded-full"
+                              onError={(e) => {
+                                // Fallback to team initials if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  const fallback =
+                                    document.createElement("div");
+                                  fallback.className =
+                                    "w-12 h-12 rounded-full bg-white dark:bg-neutral-700 flex items-center justify-center text-blue-500 font-bold text-lg";
+                                  fallback.textContent =
+                                    result.fixture.away_team.name
+                                      .slice(0, 2)
+                                      .toUpperCase();
+                                  parent.appendChild(fallback);
+                                }
+                              }}
                             />
                           </div>
                           <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white dark:bg-neutral-700 rounded-full border-2 border-white dark:border-neutral-700 flex items-center justify-center">

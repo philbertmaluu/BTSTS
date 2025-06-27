@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Twitter, Instagram, Mail, Github as GitHub } from 'lucide-react';
+import { Instagram } from 'lucide-react';
 import { Basketball } from '../icons/Basketball';
 
 export const Footer: React.FC = () => {
