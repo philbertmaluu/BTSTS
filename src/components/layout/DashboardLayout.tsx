@@ -104,14 +104,12 @@ const DashboardLayout: React.FC = () => {
             alt="BDL Logo"
             className="h-8 w-8"
           />
-          <div>
-            <h1 className="text-xl font-bold text-neutral-900 dark:text-white">
-              BDL
-            </h1>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Dashboard
-            </p>
-          </div>
+          {/* <div> */}
+          <h1 className="text-xl font-bold text-neutral-900 dark:text-white">
+            BDL
+          </h1>
+
+          {/* </div> */}
         </div>
       </div>
 
@@ -242,11 +240,11 @@ const DashboardLayout: React.FC = () => {
                   <Menu size={20} />
                 </Button>
                 <div>
-                  <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                  {/* <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
                     {filteredNavItems.find(
                       (item) => item.path === location.pathname
                     )?.name || "Dashboard"}
-                  </h1>
+                  </h1> */}
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     Welcome back, {user?.name}
                   </p>

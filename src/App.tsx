@@ -23,6 +23,7 @@ import { MatchResultsPage } from "./pages/admin/MatchResultsPage";
 import { TeamsPage2 } from "./pages/admin/TeamsPage";
 import { UsersPage } from "./pages/admin/UsersPage";
 import MatchResults from "./pages/MatchResults";
+import { ProfilePage } from "./pages/profile";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -66,7 +67,7 @@ function App() {
                 <Route path="/admin/teams" element={<TeamsPage2 />} />
                 <Route path="/admin/fixtures" element={<FixturesPage />} />
                 <Route path="/admin/users" element={<UsersPage />} />
-                {/* <Route path="/profile" element={<ProfilePage />} /> */}
+                <Route path="/profile" element={<ProfilePage />} /> 
                 <Route
                   path="/admin/match-results"
                   element={<MatchResultsPage />}
