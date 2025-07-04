@@ -277,7 +277,7 @@ export const MatchResultsPage: React.FC = () => {
                     leftIcon={<Search size={16} />}
                   />
                 </div>
-                <select
+                {/* <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -287,7 +287,7 @@ export const MatchResultsPage: React.FC = () => {
                   <option value="In Progress">In Progress</option>
                   <option value="Completed">Completed</option>
                   <option value="Cancelled">Cancelled</option>
-                </select>
+                </select> */}
               </div>
             </CardBody>
           </Card>
@@ -316,9 +316,9 @@ export const MatchResultsPage: React.FC = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Date & Time
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                    {/* <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Status
-                    </th>
+                    </th> */}
                     <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Winner
                     </th>
@@ -431,7 +431,7 @@ export const MatchResultsPage: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      {/* <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
                             result.status
@@ -439,7 +439,7 @@ export const MatchResultsPage: React.FC = () => {
                         >
                           {result.status}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         {result.winner ? (
                           <span className="text-sm font-medium text-green-600 dark:text-green-400">

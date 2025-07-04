@@ -1,20 +1,36 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Trophy,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { Trophy, TrendingUp, Loader2, AlertCircle } from "lucide-react";
 import { Header } from "../components/layout/Header";
 import { Footer } from "../components/layout/Footer";
 import { Card } from "../components/ui/Card";
 import { get } from "../api/baseApi";
-import { TeamStats, TeamStatsResponse } from "../types";
 
-// Team logo mapping for local images
+// New interface for the API response
+interface TeamStanding {
+  team_id: number;
+  team_name: string;
+  team_logo: string;
+  position: number;
+  played: number;
+  won: number;
+  lost: number;
+  won_by_walkover: number;
+  goals_for: number;
+  goals_against: number;
+  goal_difference: number;
+  points: number;
+  win_percentage: number;
+  form: string[];
+}
+
+interface TeamStandingsResponse {
+  success: boolean;
+  message: string;
+  data: TeamStanding[];
+}
+
+// Team logo mapping for local images (fallback)
 const teamLogos: { [key: string]: string } = {
   "Army Basketball Club": "/images/ABC.jpeg",
   "Chui Basketball Club": "/images/CHUI.jpeg",
@@ -23,46 +39,38 @@ const teamLogos: { [key: string]: string } = {
   "Pazi Basketball Club": "/images/PAZI.jpeg",
   "UDSM Outsiders": "/images/UDSM.jpeg",
   "KIUT Giants Club": "/images/KIUT.jpeg",
+  Chui: "/images/CHUI.jpeg",
+  "UDSM OUTISIDES": "/images/UDSM.jpeg",
+  "Army Basketball": "/images/ABC.jpeg",
 };
 
 const TeamStandingsPage: React.FC = () => {
-  const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
+  const [teamStats, setTeamStats] = useState<TeamStanding[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTeamStats();
+    fetchTeamStandings();
   }, []);
 
-  const fetchTeamStats = async () => {
+  const fetchTeamStandings = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response: TeamStatsResponse = await get("/team-stats");
+      const response: TeamStandingsResponse = await get("/team-standings");
 
       if (response.success) {
-        // Sort by points (descending), then by wins (descending), then by losses (ascending)
-        const sortedStats = response.data.sort((a, b) => {
-          if (b.points !== a.points) return b.points - a.points;
-          if (b.wins !== a.wins) return b.wins - a.wins;
-          return a.losses - b.losses;
-        });
-
-        setTeamStats(sortedStats);
+        // Data is already sorted by position from the API
+        setTeamStats(response.data);
       } else {
-        setError("Failed to fetch team statistics");
+        setError("Failed to fetch team standings");
       }
     } catch (err) {
-      console.error("Error fetching team stats:", err);
+      console.error("Error fetching team standings:", err);
       setError("Failed to load team standings. Please try again later.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const getWinPercentage = (wins: number, losses: number) => {
-    const total = wins + losses;
-    return total > 0 ? ((wins / total) * 100).toFixed(1) : "0.0";
   };
 
   const getRankIcon = (rank: number) => {
@@ -72,12 +80,21 @@ const TeamStandingsPage: React.FC = () => {
     return rank;
   };
 
-  const getTrendIcon = (currentRank: number, previousRank: number) => {
-    if (currentRank < previousRank)
-      return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (currentRank > previousRank)
-      return <TrendingDown className="w-4 h-4 text-red-500" />;
-    return <Minus className="w-4 h-4 text-gray-400" />;
+  const getFormDisplay = (form: string[]) => {
+    return form.slice(-5).map((result, index) => (
+      <span
+        key={index}
+        className={`inline-block w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center mr-1 ${
+          result === "W"
+            ? "bg-green-500 text-white"
+            : result === "L"
+            ? "bg-red-500 text-white"
+            : "bg-gray-300 text-gray-600"
+        }`}
+      >
+        {result}
+      </span>
+    ));
   };
 
   if (loading) {
@@ -117,7 +134,7 @@ const TeamStandingsPage: React.FC = () => {
                   {error}
                 </p>
                 <button
-                  onClick={fetchTeamStats}
+                  onClick={fetchTeamStandings}
                   className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                 >
                   Try Again
@@ -192,7 +209,7 @@ const TeamStandingsPage: React.FC = () => {
                         </p>
                         <p className="text-3xl font-bold">
                           {teamStats.reduce(
-                            (sum, team) => sum + team.games_played,
+                            (sum, team) => sum + team.played,
                             0
                           ) / 2}
                         </p>
@@ -218,9 +235,7 @@ const TeamStandingsPage: React.FC = () => {
                           Season Progress
                         </p>
                         <p className="text-3xl font-bold">
-                          {Math.round(
-                            ((teamStats[0]?.games_played || 0) / 14) * 100
-                          )}
+                          {Math.round(((teamStats[0]?.played || 0) / 14) * 100)}
                           %
                         </p>
                       </div>
@@ -252,10 +267,13 @@ const TeamStandingsPage: React.FC = () => {
                     <thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
                       <tr>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Rank
+                          POS
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                           Team
+                        </th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          PLD
                         </th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                           W
@@ -264,61 +282,59 @@ const TeamStandingsPage: React.FC = () => {
                           L
                         </th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          PCT
+                          WO
                         </th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          GB
+                          GF
                         </th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Points
+                          GA
                         </th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                          Trend
+                          GD
+                        </th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          PTS
+                        </th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                          Form
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
                       {teamStats.map((team, index) => {
-                        const rank = index + 1;
-                        const winPercentage = getWinPercentage(
-                          team.wins,
-                          team.losses
-                        );
-                        const gamesBack =
-                          rank === 1
-                            ? "-"
-                            : (teamStats[0].wins -
-                                team.wins +
-                                (team.losses - teamStats[0].losses)) /
-                              2;
                         const logo =
-                          teamLogos[team.team.name] || "/images/ABC.jpeg";
+                          team.team_logo ||
+                          teamLogos[team.team_name] ||
+                          "/images/ABC.jpeg";
 
                         return (
                           <motion.tr
-                            key={team.id}
+                            key={team.team_id}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.3, delay: index * 0.05 }}
                             className={`
                               hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors
                               ${
-                                rank <= 3
+                                team.position <= 3
                                   ? "bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20"
                                   : ""
                               }
                               ${
-                                rank === 1 ? "border-l-4 border-yellow-500" : ""
+                                team.position === 1
+                                  ? "border-l-4 border-yellow-500"
+                                  : ""
                               }
                             `}
                           >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <span className="text-lg mr-2">
-                                  {getRankIcon(rank)}
+                                  {getRankIcon(team.position)}
                                 </span>
                                 <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                                  {rank}
+                                  {team.position}
                                 </span>
                               </div>
                             </td>
@@ -328,39 +344,61 @@ const TeamStandingsPage: React.FC = () => {
                                   <img
                                     className="h-10 w-10 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700"
                                     src={logo}
-                                    alt={team.team.name}
+                                    alt={team.team_name}
                                   />
                                 </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-semibold text-neutral-900 dark:text-white">
-                                    {team.team.name}
+                                    {team.team_name}
                                   </div>
                                   <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                                    {team.games_played} games
+                                    {team.played} games
                                   </div>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                                {team.played}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
                               <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                                {team.wins}
+                                {team.won}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <span className="text-sm font-semibold text-red-600 dark:text-red-400">
-                                {team.losses}
+                                {team.lost}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                                {winPercentage}%
+                                {team.won_by_walkover}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                                {typeof gamesBack === "number"
-                                  ? gamesBack.toFixed(1)
-                                  : gamesBack}
+                                {team.goals_for}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                                {team.goals_against}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span
+                                className={`text-sm font-semibold ${
+                                  team.goal_difference > 0
+                                    ? "text-green-600 dark:text-green-400"
+                                    : team.goal_difference < 0
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-neutral-900 dark:text-white"
+                                }`}
+                              >
+                                {team.goal_difference > 0 ? "+" : ""}
+                                {team.goal_difference}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -369,8 +407,9 @@ const TeamStandingsPage: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                              {getTrendIcon(rank, rank)}{" "}
-                              {/* Placeholder - would need previous rank data */}
+                              <div className="flex justify-center">
+                                {getFormDisplay(team.form)}
+                              </div>
                             </td>
                           </motion.tr>
                         );
@@ -393,7 +432,7 @@ const TeamStandingsPage: React.FC = () => {
                   <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
                     Legend
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                     <div className="flex items-center">
                       <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
                       <span className="text-neutral-600 dark:text-neutral-400">
@@ -410,6 +449,19 @@ const TeamStandingsPage: React.FC = () => {
                       <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
                       <span className="text-neutral-600 dark:text-neutral-400">
                         Losses
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="flex space-x-1 mr-2">
+                        <span className="w-4 h-4 bg-green-500 rounded text-white text-xs flex items-center justify-center">
+                          W
+                        </span>
+                        <span className="w-4 h-4 bg-red-500 rounded text-white text-xs flex items-center justify-center">
+                          L
+                        </span>
+                      </div>
+                      <span className="text-neutral-600 dark:text-neutral-400">
+                        Form (Last 5)
                       </span>
                     </div>
                   </div>

@@ -80,7 +80,6 @@ interface ScoringModalProps {
     startTime: string;
     venue: string;
   };
-  onScoreUpdate: (team: "home" | "away", points: number) => void;
   onSaveMatch: (matchStats: MatchStats) => void;
 }
 
@@ -123,7 +122,6 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
   isOpen,
   onClose,
   match,
-  onScoreUpdate,
   onSaveMatch,
 }) => {
   const [stats, setStats] = useState<MatchStats>(initialStats);
@@ -132,6 +130,9 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
   >("Scheduled");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Check if scoring is allowed
+  const canScore = gameStatus === "In Progress";
 
   // Validation function
   const validateStats = (): { isValid: boolean; errors: string[] } => {
@@ -184,44 +185,16 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
     return { isValid: errors.length === 0, errors };
   };
 
-  const updateStat = (
-    team: "home" | "away",
-    stat: keyof MatchStats,
-    value: number
-  ) => {
-    setStats((prev) => {
-      const newStats = {
-        ...prev,
-        [stat]: Math.max(0, (prev[stat] as number) + value),
-      };
-
-      // Auto-calculate total rebounds when offensive or defensive rebounds change
-      if (
-        stat === "home_rebounds_offensive" ||
-        stat === "home_rebounds_defensive"
-      ) {
-        newStats.home_rebounds_total =
-          newStats.home_rebounds_offensive + newStats.home_rebounds_defensive;
-      }
-      if (
-        stat === "away_rebounds_offensive" ||
-        stat === "away_rebounds_defensive"
-      ) {
-        newStats.away_rebounds_total =
-          newStats.away_rebounds_offensive + newStats.away_rebounds_defensive;
-      }
-
-      return newStats;
-    });
-  };
-
-  // updateStat function removed - now using professional scoring functions below
-
   // Professional NBA-style scoring functions
   const addFieldGoal = (
     team: "home" | "away",
     isThreePointer: boolean = false
   ) => {
+    if (!canScore) {
+      toast.error("Please start the game before scoring");
+      return;
+    }
+
     setStats((prev) => {
       const newStats = { ...prev };
 
@@ -252,6 +225,11 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
   };
 
   const addFreeThrow = (team: "home" | "away", made: boolean) => {
+    if (!canScore) {
+      toast.error("Please start the game before scoring");
+      return;
+    }
+
     setStats((prev) => {
       const newStats = { ...prev };
 
@@ -277,6 +255,11 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
     team: "home" | "away",
     shotType: "field_goal" | "three_pointer" | "free_throw"
   ) => {
+    if (!canScore) {
+      toast.error("Please start the game before scoring");
+      return;
+    }
+
     setStats((prev) => {
       const newStats = { ...prev };
 
@@ -305,6 +288,11 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
   };
 
   const addOtherStat = (team: "home" | "away", statType: string) => {
+    if (!canScore) {
+      toast.error("Please start the game before scoring");
+      return;
+    }
+
     setStats((prev) => {
       const newStats = { ...prev };
 
@@ -381,6 +369,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
       status: "In Progress",
       game_start_time: new Date().toISOString(),
     }));
+    toast.success("Game started! You can now begin scoring.");
   };
 
   const endGame = () => {
@@ -393,6 +382,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
       game_end_time: new Date().toISOString(),
       winner,
     }));
+    toast.success("Game ended!");
   };
 
   const saveMatch = async () => {
@@ -677,6 +667,23 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
 
           {/* Professional NBA-Style Scoring Interface */}
           <Card title="Professional Scoring" style={{ marginBottom: 24 }}>
+            {!canScore && (
+              <div
+                style={{
+                  background: "#fef3c7",
+                  border: "1px solid #f59e0b",
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 16,
+                  textAlign: "center",
+                }}
+              >
+                <p style={{ margin: 0, color: "#92400e", fontWeight: 500 }}>
+                  ⚠️ Scoring is disabled. Please click "Start Game" to begin
+                  scoring.
+                </p>
+              </div>
+            )}
             <Row gutter={24}>
               {/* Home Team Scoring */}
               <Col span={12}>
@@ -717,6 +724,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           size="lg"
                           onClick={() => addFieldGoal("home", false)}
                           className="w-full h-12 font-semibold"
+                          disabled={!canScore}
                         >
                           Made (2pts)
                         </Button>
@@ -727,6 +735,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           size="lg"
                           onClick={() => addMissedShot("home", "field_goal")}
                           className="w-full h-12 font-semibold"
+                          disabled={!canScore}
                         >
                           Missed
                         </Button>
@@ -737,6 +746,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           size="lg"
                           onClick={() => addFieldGoal("home", true)}
                           className="w-full h-12 font-semibold"
+                          disabled={!canScore}
                         >
                           Made (3pts)
                         </Button>
@@ -749,6 +759,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           size="lg"
                           onClick={() => addMissedShot("home", "three_pointer")}
                           className="w-full h-12 font-semibold"
+                          disabled={!canScore}
                         >
                           Missed 3pt
                         </Button>
@@ -759,6 +770,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           size="lg"
                           onClick={() => addFreeThrow("home", true)}
                           className="w-full h-12 font-semibold"
+                          disabled={!canScore}
                         >
                           FT Made
                         </Button>
@@ -769,6 +781,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           size="lg"
                           onClick={() => addFreeThrow("home", false)}
                           className="w-full h-12 font-semibold"
+                          disabled={!canScore}
                         >
                           FT Missed
                         </Button>
@@ -792,6 +805,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("home", "assist")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -807,6 +821,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           onClick={() =>
                             addOtherStat("home", "offensive_rebound")
                           }
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -822,6 +837,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           onClick={() =>
                             addOtherStat("home", "defensive_rebound")
                           }
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -835,6 +851,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("home", "block")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -850,6 +867,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("home", "steal")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -863,6 +881,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("home", "turnover")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -876,6 +895,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("home", "foul")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -946,6 +966,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           type="primary"
                           size="large"
                           onClick={() => addFieldGoal("away", false)}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 50,
@@ -959,6 +980,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="large"
                           onClick={() => addMissedShot("away", "field_goal")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 50,
@@ -973,6 +995,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           type="primary"
                           size="large"
                           onClick={() => addFieldGoal("away", true)}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 50,
@@ -988,6 +1011,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="large"
                           onClick={() => addMissedShot("away", "three_pointer")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 50,
@@ -1001,6 +1025,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="large"
                           onClick={() => addFreeThrow("away", true)}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 50,
@@ -1014,6 +1039,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="large"
                           onClick={() => addFreeThrow("away", false)}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 50,
@@ -1042,6 +1068,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("away", "assist")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -1057,6 +1084,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           onClick={() =>
                             addOtherStat("away", "offensive_rebound")
                           }
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -1072,6 +1100,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                           onClick={() =>
                             addOtherStat("away", "defensive_rebound")
                           }
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -1085,6 +1114,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("away", "block")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -1100,6 +1130,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("away", "steal")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -1113,6 +1144,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("away", "turnover")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,
@@ -1126,6 +1158,7 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
                         <AntButton
                           size="small"
                           onClick={() => addOtherStat("away", "foul")}
+                          disabled={!canScore}
                           style={{
                             width: "100%",
                             height: 40,

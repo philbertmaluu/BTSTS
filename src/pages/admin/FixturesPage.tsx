@@ -28,6 +28,7 @@ interface Fixture {
   venue: string;
   status: "Scheduled" | "In Progress" | "Completed" | "Cancelled";
   season_id: number;
+  statistician_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +40,32 @@ interface Team {
   logo_url?: string;
 }
 
+interface Statistician {
+  id: number;
+  name: string;
+  email: string;
+  email_verified_at: string | null;
+  status: string;
+  is_active: boolean;
+  deactivation_reason: string | null;
+  deactivated_at: string | null;
+  deactivated_by: string | null;
+  created_at: string;
+  updated_at: string;
+  roles: Array<{
+    id: number;
+    name: string;
+    description: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    pivot: {
+      user_id: number;
+      role_id: number;
+    };
+  }>;
+}
+
 interface CreateFixtureData {
   home_team_id: string | number;
   away_team_id: string | number;
@@ -46,6 +73,7 @@ interface CreateFixtureData {
   fixture_time: string;
   venue: string;
   season_id: number;
+  statician_id?: string | number;
 }
 
 interface ApiResponse {
@@ -60,11 +88,36 @@ interface CreateFixtureResponse {
   errors?: Record<string, string[]>;
 }
 
+interface StatisticiansResponse {
+  success: boolean;
+  data: {
+    current_page: number;
+    data: Statistician[];
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    links: Array<{
+      url: string | null;
+      label: string;
+      active: boolean;
+    }>;
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+  };
+}
+
 export const FixturesPage: React.FC = () => {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [statisticians, setStatisticians] = useState<Statistician[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamsLoading, setTeamsLoading] = useState(true);
+  const [statisticiansLoading, setStatisticiansLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -76,6 +129,7 @@ export const FixturesPage: React.FC = () => {
     fixture_time: "",
     venue: "",
     season_id: 1, // Default season
+    statician_id: "",
   });
   const [formErrors, setFormErrors] = useState<Partial<CreateFixtureData>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -83,6 +137,7 @@ export const FixturesPage: React.FC = () => {
   useEffect(() => {
     fetchFixtures();
     fetchTeams();
+    fetchStatisticians();
   }, []);
 
   const fetchFixtures = async () => {
@@ -136,6 +191,48 @@ export const FixturesPage: React.FC = () => {
     }
   };
 
+  const fetchStatisticians = async () => {
+    try {
+      setStatisticiansLoading(true);
+      const response = await get<StatisticiansResponse>("/users");
+
+      if (
+        response.success &&
+        response.data &&
+        Array.isArray(response.data.data)
+      ) {
+        // Filter users who have the "Statistician" role and are active
+        const statisticianUsers = response.data.data.filter(
+          (user) =>
+            user.is_active &&
+            user.roles.some(
+              (role: { name: string }) => role?.name === "Statistician"
+            )
+        );
+        setStatisticians(statisticianUsers);
+      } else if (Array.isArray(response)) {
+        // Handle direct array response (fallback)
+        const statisticianUsers = response.filter(
+          (user) =>
+            user.is_active &&
+            user.roles.some(
+              (role: { name: string }) => role?.name === "Statistician"
+            )
+        );
+        setStatisticians(statisticianUsers);
+      } else {
+        console.error("Unexpected statisticians response format:", response);
+        setStatisticians([]);
+      }
+    } catch (error) {
+      console.error("Error fetching statisticians:", error);
+      setStatisticians([]);
+      toast.error("Failed to load statisticians");
+    } finally {
+      setStatisticiansLoading(false);
+    }
+  };
+
   const validateForm = (): boolean => {
     const errors: Partial<CreateFixtureData> = {};
 
@@ -163,6 +260,10 @@ export const FixturesPage: React.FC = () => {
       errors.venue = "Venue is required";
     }
 
+    if (!formData.statician_id) {
+      errors.statician_id = "Statistician is required";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -188,6 +289,10 @@ export const FixturesPage: React.FC = () => {
           typeof formData.away_team_id === "string"
             ? parseInt(formData.away_team_id) || 0
             : formData.away_team_id,
+        statician_id:
+          typeof formData.statician_id === "string"
+            ? parseInt(formData.statician_id) || 0
+            : formData.statician_id,
       };
 
       let response;
@@ -215,6 +320,7 @@ export const FixturesPage: React.FC = () => {
           fixture_time: "",
           venue: "",
           season_id: 1,
+          statician_id: "",
         });
         setFormErrors({});
         await fetchFixtures();
@@ -284,6 +390,7 @@ export const FixturesPage: React.FC = () => {
       fixture_time: scheduledDate.toTimeString().substring(0, 5), // Format as HH:MM
       venue: fixture.venue,
       season_id: fixture.season_id,
+      statician_id: fixture.statistician_id || "",
     });
     setShowAddModal(true);
   };
@@ -607,6 +714,7 @@ export const FixturesPage: React.FC = () => {
                       fixture_time: "",
                       venue: "",
                       season_id: 1,
+                      statician_id: "",
                     });
                     setFormErrors({});
                   }}
@@ -746,6 +854,45 @@ export const FixturesPage: React.FC = () => {
                   )}
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Statistician *
+                  </label>
+                  <select
+                    value={formData.statician_id || ""}
+                    onChange={(e) =>
+                      handleInputChange("statician_id", e.target.value)
+                    }
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      formErrors.statician_id
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-neutral-600"
+                    }`}
+                    disabled={statisticiansLoading}
+                  >
+                    <option value="">
+                      {statisticiansLoading
+                        ? "Loading statisticians..."
+                        : "Select Statistician"}
+                    </option>
+                    {statisticians.length === 0 && !statisticiansLoading && (
+                      <option value="" disabled>
+                        No statisticians available
+                      </option>
+                    )}
+                    {statisticians.map((statistician) => (
+                      <option key={statistician.id} value={statistician.id}>
+                        {statistician.name}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.statician_id && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.statician_id}
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex space-x-3 pt-4">
                   <Button
                     type="submit"
@@ -773,6 +920,7 @@ export const FixturesPage: React.FC = () => {
                         fixture_time: "",
                         venue: "",
                         season_id: 1,
+                        statician_id: "",
                       });
                       setFormErrors({});
                     }}
