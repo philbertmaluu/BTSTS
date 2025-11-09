@@ -13,8 +13,9 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, phone: string, location: string) => Promise<void>;  // Update this line
   logout: () => void;
+  updateUser: (updatedUser: User) => void;
   hasRole: (roleName: string) => boolean;
   hasAnyRole: (roleNames: string[]) => boolean;
 }
@@ -96,28 +97,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, phone: string, location: string) => {
     setIsLoading(true);
     setError(null);
-
+  
     try {
       const response: RegisterResponse = await post("/register", {
         email,
         password,
         name,
+        phone,
+        location,
       });
-
+  
       if (response.success) {
-        // After successful registration, automatically log in
         await login(email, password);
       } else {
+        // Handle validation errors
+        if (response.errors) {
+          const errorMessages = Object.values(response.errors).flat();
+          throw new Error(errorMessages.join(", "));
+        }
         throw new Error(response.message || "Registration failed");
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "An error occurred during registration";
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during registration";
       setError(errorMessage);
       throw err;
     } finally {
@@ -129,6 +133,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     removeStoredToken();
     removeStoredUser();
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    setStoredUser(updatedUser);
   };
 
   // Role-based access control helpers
@@ -159,6 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
+        updateUser,
         hasRole,
         hasAnyRole,
       }}

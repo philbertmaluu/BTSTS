@@ -15,13 +15,22 @@ interface Team {
   updated_at: string;
 }
 
+interface Venue {
+  id: number;
+  name: string;
+  location: string;
+  capacity: number;
+  created_at: string;
+  updated_at: string;
+}
+
 interface Match {
   id: number;
   home_team_id: number;
   away_team_id: number;
   fixture_date: string;
   fixture_time: string;
-  venue: string;
+  venue: Venue;
   status: string;
   created_at: string;
   updated_at: string;
@@ -191,16 +200,14 @@ export const MatchesPage: React.FC = () => {
 
                 {/* Card Header with Venue */}
                 <div className="p-6 pb-4">
-                  <div className="text-center mb-4">
-                    <div className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">
-                      {formatDateTime(match.fixture_date, match.fixture_time)}
-                    </div>
-                    <div className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-                      📍 {match.venue}
-                    </div>
-                  </div>
-
-                  {/* Teams Section */}
+                    <div className="text-center mb-4">
+                      <div className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">
+                        {formatDateTime(match.fixture_date, match.fixture_time)}
+                      </div>
+                      <div className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
+                        📍 {match.venue.location}
+                      </div>
+                    </div>                  {/* Teams Section */}
                   <div className="space-y-6">
                     {/* Home Team */}
                     <div className="flex items-center justify-between">

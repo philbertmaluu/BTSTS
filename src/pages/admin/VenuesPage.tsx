@@ -1,134 +1,81 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, Search, X } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, MapPin, Users } from "lucide-react";
 import { Card, CardBody } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { get, post, put, del } from "../../api/baseApi";
+import { getVenues, createVenue, updateVenue, deleteVenue } from "../../api/venue";
+import { Venue } from "../../types";
 import toast, { Toaster } from "react-hot-toast";
 
-interface Coach {
-  id: number;
+interface CreateVenueData {
   name: string;
-  email: string;
-  email_verified_at: string | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
+  location: string;
+  capacity: number;
 }
 
-interface Team {
-  id: number;
-  name: string;
-  logo: string | null;
-  coach_id: number;
-  created_at: string;
-  updated_at: string;
-  coach: Coach;
-  logo_url?: string;
-}
-
-interface ApiResponse {
-  success: boolean;
-  data: Team[];
-}
-
-interface CreateTeamData {
-  name: string;
-  logo: File | null;
-  coach_id: number;
-}
-
-interface CreateTeamResponse {
-  success: boolean;
-  message: string;
-  data?: Team;
-  errors?: Record<string, string[]>;
-}
-
-export const TeamsPage2: React.FC = () => {
-  const [teams, setTeams] = useState<Team[]>([]);
+export const VenuesPage: React.FC = () => {
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-  const [formData, setFormData] = useState<CreateTeamData>({
+  const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
+  const [formData, setFormData] = useState<CreateVenueData>({
     name: "",
-    logo: null,
-    coach_id: 1,
+    location: "",
+    capacity: 0,
   });
   const [formErrors, setFormErrors] = useState<{
     name?: string;
-    logo?: string;
+    location?: string;
+    capacity?: string;
   }>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchTeams();
+    fetchVenues();
   }, []);
 
-  const fetchTeams = async () => {
+  const fetchVenues = async () => {
     try {
       setLoading(true);
-      const response = await get<ApiResponse>("/teams");
-
-      // Handle the API response structure
-      if (response.success && Array.isArray(response.data)) {
-        setTeams(response.data);
-      } else {
-        console.error("Unexpected API response format:", response);
-        setTeams([]);
-      }
+      const data = await getVenues();
+      setVenues(data);
     } catch (error) {
-      console.error("Error fetching teams:", error);
-      setTeams([]);
-      toast.error("Failed to load teams");
+      console.error("Error fetching venues:", error);
+      setVenues([]);
+      toast.error("Failed to load venues");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteTeam = async (teamId: number) => {
-    if (window.confirm("Are you sure you want to delete this team?")) {
+  const handleDeleteVenue = async (venueId: number) => {
+    if (window.confirm("Are you sure you want to delete this venue?")) {
       try {
-        await del(`/teams/${teamId}`);
-        await fetchTeams();
-        toast.success("Team deleted successfully");
+        await deleteVenue(venueId);
+        await fetchVenues();
+        toast.success("Venue deleted successfully");
       } catch (error) {
-        console.error("Error deleting team:", error);
-        toast.error("Failed to delete team");
+        console.error("Error deleting venue:", error);
+        toast.error("Failed to delete venue");
       }
     }
   };
 
   const validateForm = (): boolean => {
-    const errors: { name?: string; logo?: string } = {};
+    const errors: { name?: string; location?: string; capacity?: string } = {};
 
     if (!formData.name.trim()) {
-      errors.name = "Team name is required";
+      errors.name = "Venue name is required";
     }
 
-    if (!formData.logo) {
-      errors.logo = "Logo is required";
-    } else {
-      // Validate file type based on backend requirements
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/svg+xml",
-      ];
-      if (!allowedTypes.includes(formData.logo.type)) {
-        errors.logo =
-          "Please select a valid image file (JPEG, PNG, GIF, or SVG)";
-      }
+    if (!formData.location.trim()) {
+      errors.location = "Location is required";
+    }
 
-      // Validate file size (2MB limit as per backend)
-      const maxSize = 2 * 1024 * 1024; // 2MB
-      if (formData.logo.size > maxSize) {
-        errors.logo = "File size must be less than 2MB";
-      }
+    if (formData.capacity <= 0) {
+      errors.capacity = "Capacity must be greater than 0";
     }
 
     setFormErrors(errors);
@@ -145,71 +92,21 @@ export const TeamsPage2: React.FC = () => {
     setSubmitting(true);
 
     try {
-      // Create FormData for file upload
-      const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.name);
-      formDataToSend.append("coach_id", formData.coach_id.toString());
-
-      if (formData.logo) {
-        formDataToSend.append("logo", formData.logo);
-        console.log(
-          "Appending logo file:",
-          formData.logo.name,
-          formData.logo.size,
-          formData.logo.type
-        );
-      }
-
-      // Log FormData contents for debugging
-      console.log("FormData entries:");
-      for (const [key, value] of formDataToSend.entries()) {
-        console.log(
-          "FormData entry:",
-          key,
-          value instanceof File
-            ? `File: ${value.name} (${value.size} bytes)`
-            : value
-        );
-      }
-
-      console.log("Sending request to /teams with FormData...");
-
-      let response;
-      if (editingTeam) {
-        // Use PUT for updates
-        response = await put<CreateTeamResponse>(
-          `/teams/${editingTeam.id}`,
-          formDataToSend
-        );
+      if (editingVenue) {
+        await updateVenue(editingVenue.id, formData);
+        toast.success("Venue updated successfully");
       } else {
-        // Use POST for creating new teams
-        response = await post<CreateTeamResponse>("/teams", formDataToSend);
+        await createVenue(formData);
+        toast.success("Venue created successfully");
       }
 
-      if (response.success) {
-        toast.success(
-          editingTeam
-            ? "Team updated successfully"
-            : "Team created successfully"
-        );
-        setShowAddModal(false);
-        setEditingTeam(null);
-        setFormData({ name: "", logo: null, coach_id: 1 });
-        setFormErrors({});
-        // Reset file input
-        const fileInput = document.querySelector(
-          'input[type="file"][name="logo"]'
-        ) as HTMLInputElement;
-        if (fileInput) fileInput.value = "";
-        await fetchTeams();
-      } else {
-        toast.error(
-          response.message ||
-            (editingTeam ? "Failed to update team" : "Failed to create team")
-        );
-      }
+      setShowAddModal(false);
+      setEditingVenue(null);
+      setFormData({ name: "", location: "", capacity: 0 });
+      setFormErrors({});
+      await fetchVenues();
     } catch (error: unknown) {
-      console.error("Error creating team:", error);
+      console.error("Error saving venue:", error);
 
       if (error && typeof error === "object" && "response" in error) {
         const apiError = error as {
@@ -219,18 +116,17 @@ export const TeamsPage2: React.FC = () => {
         };
 
         if (apiError.response?.data?.errors) {
-          // Handle validation errors
           const validationErrors = apiError.response.data.errors;
           Object.keys(validationErrors).forEach((key) => {
             toast.error(validationErrors[key][0]);
           });
         } else {
           toast.error(
-            apiError.response?.data?.message || "Failed to create team"
+            apiError.response?.data?.message || "Failed to save venue"
           );
         }
       } else {
-        toast.error("Failed to create team");
+        toast.error("Failed to save venue");
       }
     } finally {
       setSubmitting(false);
@@ -238,20 +134,20 @@ export const TeamsPage2: React.FC = () => {
   };
 
   const handleInputChange = (
-    field: keyof CreateTeamData,
-    value: string | number | File
+    field: keyof CreateVenueData,
+    value: string | number
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (field === "name" && formErrors.name) {
-      setFormErrors((prev) => ({ ...prev, name: undefined }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const filteredTeams = (teams || []).filter((team) => {
-    const matchesSearch = team.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+  const filteredVenues = venues.filter((venue) => {
+    const matchesSearch =
+      venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      venue.location.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -268,7 +164,7 @@ export const TeamsPage2: React.FC = () => {
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
         <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-          Loading teams...
+          Loading venues...
         </p>
       </div>
     );
@@ -311,17 +207,17 @@ export const TeamsPage2: React.FC = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-                Manage Teams
+                Manage Venues
               </h1>
               <p className="text-neutral-600 dark:text-neutral-400">
-                View and manage basketball teams
+                View and manage basketball venues
               </p>
             </div>
             <Button
               onClick={() => setShowAddModal(true)}
               leftIcon={<Plus size={16} />}
             >
-              Add Team
+              Add Venue
             </Button>
           </div>
 
@@ -331,7 +227,7 @@ export const TeamsPage2: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <Input
-                    placeholder="Search teams..."
+                    placeholder="Search venues..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     leftIcon={<Search size={16} />}
@@ -341,14 +237,14 @@ export const TeamsPage2: React.FC = () => {
             </CardBody>
           </Card>
 
-          {/* Teams Table */}
+          {/* Venues Table */}
           <Card className="overflow-hidden">
             <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 text-white p-6">
               <h2 className="text-xl font-bold">
-                Teams ({filteredTeams.length})
+                Venues ({filteredVenues.length})
               </h2>
               <p className="text-neutral-300 text-sm mt-1">
-                Basketball Development League Teams
+                Basketball Venues and Locations
               </p>
             </div>
 
@@ -357,7 +253,13 @@ export const TeamsPage2: React.FC = () => {
                 <thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                      Team
+                      Venue
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Capacity
                     </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Created
@@ -368,9 +270,9 @@ export const TeamsPage2: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                  {filteredTeams.map((team, index) => (
+                  {filteredVenues.map((venue, index) => (
                     <motion.tr
-                      key={team.id}
+                      key={venue.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -378,34 +280,35 @@ export const TeamsPage2: React.FC = () => {
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            {team.logo_url ? (
-                              <img
-                                className="h-10 w-10 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700"
-                                src={team.logo_url}
-                                alt={team.name}
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-2 border-neutral-200 dark:border-neutral-700">
-                                <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
-                                  {team.name[0]}
-                                </span>
-                              </div>
-                            )}
+                          <div className="flex-shrink-0 h-10 w-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
+                            <MapPin size={16} className="text-primary-600 dark:text-primary-400" />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-semibold text-neutral-900 dark:text-white">
-                              {team.name}
+                              {venue.name}
                             </div>
                             <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                              ID: {team.id}
+                              ID: {venue.id}
                             </div>
                           </div>
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-neutral-900 dark:text-white">
+                          {venue.location}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center">
+                          <Users size={14} className="text-neutral-400 mr-1" />
+                          <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                            {venue.capacity.toLocaleString()}
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                          {formatDate(team.created_at)}
+                          {formatDate(venue.created_at)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -414,11 +317,11 @@ export const TeamsPage2: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setEditingTeam(team);
+                              setEditingVenue(venue);
                               setFormData({
-                                name: team.name,
-                                logo: null,
-                                coach_id: team.coach_id,
+                                name: venue.name,
+                                location: venue.location,
+                                capacity: venue.capacity,
                               });
                               setShowAddModal(true);
                             }}
@@ -429,7 +332,7 @@ export const TeamsPage2: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDeleteTeam(team.id)}
+                            onClick={() => handleDeleteVenue(venue.id)}
                             leftIcon={<Trash2 size={14} />}
                             className="text-red-600 hover:text-red-700"
                           >
@@ -443,17 +346,17 @@ export const TeamsPage2: React.FC = () => {
               </table>
             </div>
 
-            {filteredTeams.length === 0 && (
+            {filteredVenues.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-neutral-600 dark:text-neutral-400">
-                  No teams found matching your criteria.
+                  No venues found matching your criteria.
                 </p>
               </div>
             )}
           </Card>
         </div>
 
-        {/* Add Team Modal */}
+        {/* Add/Edit Venue Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <motion.div
@@ -464,19 +367,14 @@ export const TeamsPage2: React.FC = () => {
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-                  {editingTeam ? "Edit Team" : "Add New Team"}
+                  {editingVenue ? "Edit Venue" : "Add New Venue"}
                 </h2>
                 <button
                   onClick={() => {
                     setShowAddModal(false);
-                    setEditingTeam(null);
-                    setFormData({ name: "", logo: null, coach_id: 1 });
+                    setEditingVenue(null);
+                    setFormData({ name: "", location: "", capacity: 0 });
                     setFormErrors({});
-                    // Reset file input
-                    const fileInput = document.querySelector(
-                      'input[type="file"]'
-                    ) as HTMLInputElement;
-                    if (fileInput) fileInput.value = "";
                   }}
                   className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
                 >
@@ -487,12 +385,12 @@ export const TeamsPage2: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Team Name *
+                    Venue Name *
                   </label>
                   <Input
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Enter team name"
+                    placeholder="Enter venue name"
                     className={formErrors.name ? "border-red-500" : ""}
                   />
                   {formErrors.name && (
@@ -504,40 +402,37 @@ export const TeamsPage2: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Logo *
+                    Location *
                   </label>
-                  <input
-                    type="file"
-                    name="logo"
-                    accept="image/*"
-                    onChange={(e) => {
-                      console.log(e.target.files);
-                      if (e.target.files && e.target.files.length > 0) {
-                        const file = e.target.files[0];
-                        handleInputChange("logo", file);
-                      }
-                    }}
-                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                      formErrors.logo
-                        ? "border-red-500"
-                        : "border-neutral-300 dark:border-neutral-600"
-                    }`}
+                  <Input
+                    value={formData.location}
+                    onChange={(e) => handleInputChange("location", e.target.value)}
+                    placeholder="Enter venue location"
+                    className={formErrors.location ? "border-red-500" : ""}
                   />
-                  {formErrors.logo && (
+                  {formErrors.location && (
                     <p className="text-red-500 text-sm mt-1">
-                      {formErrors.logo}
+                      {formErrors.location}
                     </p>
                   )}
-                  {formData.logo && (
-                    <div className="mt-2 p-2 bg-neutral-50 dark:bg-neutral-700 rounded-lg">
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                        Selected: {formData.logo.name}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-500">
-                        Size: {(formData.logo.size / 1024).toFixed(1)} KB |
-                        Type: {formData.logo.type}
-                      </p>
-                    </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Capacity *
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.capacity}
+                    onChange={(e) => handleInputChange("capacity", parseInt(e.target.value) || 0)}
+                    placeholder="Enter venue capacity"
+                    min="1"
+                    className={formErrors.capacity ? "border-red-500" : ""}
+                  />
+                  {formErrors.capacity && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.capacity}
+                    </p>
                   )}
                 </div>
 
@@ -548,26 +443,21 @@ export const TeamsPage2: React.FC = () => {
                     className="flex-1"
                   >
                     {submitting
-                      ? editingTeam
+                      ? editingVenue
                         ? "Updating..."
                         : "Creating..."
-                      : editingTeam
-                      ? "Update Team"
-                      : "Create Team"}
+                      : editingVenue
+                      ? "Update Venue"
+                      : "Create Venue"}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => {
                       setShowAddModal(false);
-                      setEditingTeam(null);
-                      setFormData({ name: "", logo: null, coach_id: 1 });
+                      setEditingVenue(null);
+                      setFormData({ name: "", location: "", capacity: 0 });
                       setFormErrors({});
-                      // Reset file input
-                      const fileInput = document.querySelector(
-                        'input[type="file"]'
-                      ) as HTMLInputElement;
-                      if (fileInput) fileInput.value = "";
                     }}
                     disabled={submitting}
                   >

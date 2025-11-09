@@ -2,14 +2,13 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
-  LineChart,
   TrendingUp,
   Users,
   Calendar,
-  Award,
   Clipboard,
-  Clock,
   Play,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Card, CardHeader, CardBody } from "../components/ui/Card";
 import { StatsCard } from "../components/stats/StatsCard";
@@ -37,9 +36,17 @@ interface Fixture {
   };
   fixture_date: string;
   fixture_time: string;
-  venue: string;
+  venue: {
+    id: number;
+    name: string;
+    location: string;
+    capacity: number;
+    created_at: string;
+    updated_at: string;
+  };
   status: "Scheduled" | "In Progress" | "Completed" | "Cancelled";
   season_id: number;
+  statistician_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -111,19 +118,20 @@ export const DashboardPage: React.FC = () => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [expandedMatches, setExpandedMatches] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) {
       navigate("/login");
-    } else {
+    } else if (hasRole("Statistician")) {
       fetchFixtures();
     }
-  }, [user, navigate]);
+  }, [user, navigate, hasRole]);
 
   const fetchFixtures = async () => {
     try {
       setLoading(true);
-      const response = await get<Fixture[]>("/fixtures");
+      const response = await get<Fixture[]>("/statistician-fixtures");
 
       // Handle the API response structure
       let fixtures: Fixture[] = [];
@@ -169,28 +177,18 @@ export const DashboardPage: React.FC = () => {
         // Handle date and time construction more robustly
         let startTime = "";
         try {
-          // If fixture_date is already in ISO format, use it directly
-          if (fixture.fixture_date.includes("T")) {
-            startTime = fixture.fixture_date;
-          } else {
-            // Otherwise, construct the date properly
-            const date = new Date(fixture.fixture_date);
-            if (!isNaN(date.getTime())) {
-              // Format the date as YYYY-MM-DD
-              const formattedDate = date.toISOString().split("T")[0];
-              startTime = `${formattedDate}T${fixture.fixture_time}`;
-            } else {
-              // Fallback to original format
-              startTime = `${fixture.fixture_date}T${fixture.fixture_time}`;
-            }
-          }
+          // Extract date part from fixture_date (remove time if present)
+          const datePart = fixture.fixture_date.split('T')[0];
+          // Combine date with fixture_time
+          startTime = `${datePart}T${fixture.fixture_time}`;
         } catch (error) {
           console.error(
             "Error constructing date for fixture:",
             fixture.id,
             error
           );
-          startTime = `${fixture.fixture_date}T${fixture.fixture_time}`;
+          // Fallback: try to construct from original format
+          startTime = `${fixture.fixture_date.split('T')[0]}T${fixture.fixture_time}`;
         }
 
         // Get match result if exists
@@ -213,7 +211,7 @@ export const DashboardPage: React.FC = () => {
             | "live"
             | "completed",
           startTime,
-          venue: fixture.venue,
+          venue: typeof fixture.venue === 'string' ? fixture.venue : fixture.venue?.name || '',
           matchResult,
         };
       });
@@ -265,42 +263,15 @@ export const DashboardPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleScoreUpdate = (team: "home" | "away", points: number) => {
-    if (!selectedMatch) return;
-
-    setMatches((prevMatches) =>
-      prevMatches.map((match) => {
-        if (match.id === selectedMatch.id) {
-          return {
-            ...match,
-            status: "live",
-            [team === "home" ? "homeTeam" : "awayTeam"]: {
-              ...match[team === "home" ? "homeTeam" : "awayTeam"],
-              score: Math.max(
-                0,
-                match[team === "home" ? "homeTeam" : "awayTeam"].score + points
-              ),
-            },
-          };
-        }
-        return match;
-      })
-    );
-
-    // Update selected match
-    setSelectedMatch((prev) => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        status: "live",
-        [team === "home" ? "homeTeam" : "awayTeam"]: {
-          ...prev[team === "home" ? "homeTeam" : "awayTeam"],
-          score: Math.max(
-            0,
-            prev[team === "home" ? "homeTeam" : "awayTeam"].score + points
-          ),
-        },
-      };
+  const toggleMatchStats = (matchId: string) => {
+    setExpandedMatches(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(matchId)) {
+        newSet.delete(matchId);
+      } else {
+        newSet.add(matchId);
+      }
+      return newSet;
     });
   };
 
@@ -565,16 +536,17 @@ export const DashboardPage: React.FC = () => {
                       {match.status === "completed" && (
                         <Button
                           variant="outline"
-                          onClick={() => handleStartScoring(match)}
+                          onClick={() => toggleMatchStats(match.id)}
+                          leftIcon={expandedMatches.has(match.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           className="px-6 py-2"
                         >
-                          View Details
+                          {expandedMatches.has(match.id) ? "Hide Statistics" : "View Statistics"}
                         </Button>
                       )}
                     </div>
 
                     {/* Detailed Statistics for Completed Matches */}
-                    {match.status === "completed" && match.matchResult && (
+                    {match.status === "completed" && match.matchResult && expandedMatches.has(match.id) && (
                       <div className="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-600">
                         <h4 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4 text-center">
                           Game Statistics
@@ -815,7 +787,6 @@ export const DashboardPage: React.FC = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           match={selectedMatch}
-          onScoreUpdate={handleScoreUpdate}
           onSaveMatch={handleSaveMatch}
         />
       )}
@@ -824,17 +795,8 @@ export const DashboardPage: React.FC = () => {
 
   const DefaultDashboard = () => (
     <>
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
-          <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-            Loading fixtures...
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatsCard
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* <StatsCard
               title="Total Fixtures"
               value={matches.length.toString()}
               icon={<Clipboard size={24} />}
@@ -865,7 +827,7 @@ export const DashboardPage: React.FC = () => {
               }
               icon={<Calendar size={24} />}
               index={3}
-            />
+            /> */}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -875,7 +837,7 @@ export const DashboardPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Card className="h-full">
+              {/* <Card className="h-full">
                 <CardHeader className="flex justify-between items-center">
                   <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
                     Team Performance
@@ -903,7 +865,7 @@ export const DashboardPage: React.FC = () => {
                     </p>
                   </div>
                 </CardBody>
-              </Card>
+              </Card> */}
             </motion.div>
 
             <motion.div
@@ -911,7 +873,7 @@ export const DashboardPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <Card className="h-full">
+              {/* <Card className="h-full">
                 <CardHeader>
                   <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
                     Recent Activities
@@ -943,12 +905,10 @@ export const DashboardPage: React.FC = () => {
                     ))}
                   </ul>
                 </CardBody>
-              </Card>
+              </Card> */}
             </motion.div>
           </div>
         </>
-      )}
-    </>
   );
 
   return (

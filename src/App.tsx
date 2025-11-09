@@ -22,6 +22,7 @@ import { FixturesPage } from "./pages/admin/FixturesPage";
 import { MatchResultsPage } from "./pages/admin/MatchResultsPage";
 import { TeamsPage2 } from "./pages/admin/TeamsPage";
 import { UsersPage } from "./pages/admin/UsersPage";
+import { VenuesPage } from "./pages/admin/VenuesPage";
 import MatchResults from "./pages/MatchResults";
 import { ProfilePage } from "./pages/profile";
 
@@ -67,6 +68,7 @@ function App() {
                 <Route path="/admin/teams" element={<TeamsPage2 />} />
                 <Route path="/admin/fixtures" element={<FixturesPage />} />
                 <Route path="/admin/users" element={<UsersPage />} />
+                <Route path="/admin/venues" element={<VenuesPage />} />
                 <Route path="/profile" element={<ProfilePage />} /> 
                 <Route
                   path="/admin/match-results"

@@ -38,32 +38,34 @@ export const HeroSection: React.FC = () => {
             animate={controls}
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-neutral-900 dark:text-white leading-tight mb-6">
-              Track Basketball
-              <span className="text-primary-500"> Statistics</span>
+              Basketball 
+              <span className="text-primary-500"> Dar es salaam </span>
               <br />
-              Like Never Before
+              League
             </h1>
             <p className="text-lg md:text-xl text-neutral-700 dark:text-neutral-300 mb-8 max-w-lg">
-              Elevate your game with comprehensive analytics, real-time updates, and professional insights for players, coaches, and fans.
+              We are the Basketball Association within the Dar es Salaam Region. 
+              We have full authority over the basketball sport in Dar es Salaam, and we are responsible for all Basketball development activities in the Dar es Salaam Region. 
+              The Basketball Dar es Salaam League (BDL) is the biggest basketball league in Tanzania.
             </p>
             <div className="flex flex-wrap gap-4">
               {user ? (
                 <Link to="/dashboard">
-                  <Button size="lg" rightIcon={<ChevronRight size={18} />}>
+                  {/* <Button size="lg" rightIcon={<ChevronRight size={18} />}>
                     Go to Dashboard
-                  </Button>
+                  </Button> */}
                 </Link>
               ) : (
                 <>
                   <Link to="/register">
-                    <Button size="lg" rightIcon={<ChevronRight size={18} />}>
+                    {/* <Button size="lg" rightIcon={<ChevronRight size={18} />}>
                       Get Started
-                    </Button>
+                    </Button> */}
                   </Link>
                   <Link to="/about">
-                    <Button size="lg" variant="outline">
+                    {/* <Button size="lg" variant="outline">
                       Learn More
-                    </Button>
+                    </Button> */}
                   </Link>
                 </>
               )}
@@ -97,8 +99,8 @@ export const HeroSection: React.FC = () => {
               <motion.div
                 className="absolute top-[calc(50%-20px)] left-[calc(50%-20px)] w-10 h-10 bg-primary-500 rounded-full"
                 animate={{
-                  x: [0, 120, 120, 0, 0],
-                  y: [0, 0, 120, 120, 0],
+                  x: [-160, -160, 160, 160, -160],
+                  y: [-160, 160, 160, -160, -160],
                 }}
                 transition={{
                   duration: 5,

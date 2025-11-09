@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  User,
+  User as UserIcon,
   Mail,
-  Calendar,
-  Shield,
   Edit,
   Save,
   X,
   Camera,
-  Trophy,
   Target,
   Settings,
   LogOut,
@@ -22,55 +19,14 @@ import { Input } from "../components/ui/Input";
 import { Card, CardBody } from "../components/ui/Card";
 import { useAuth } from "../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
+import { put } from "../api/baseApi";
 
-interface UserProfile {
-  id: number;
-  name: string;
-  email: string;
-  email_verified_at: string | null;
-  status: string;
-  is_active?: boolean;
-  created_at: string;
-  updated_at: string;
-  roles: Array<{
-    id: number;
-    name: string;
-    description: string;
-    is_active: boolean;
-  }>;
-  avatar?: string;
-  phone?: string;
-  bio?: string;
-  location?: string;
-  date_of_birth?: string;
-}
-
-interface UserStats {
-  total_matches: number;
-  matches_won: number;
-  matches_lost: number;
-  total_points: number;
-  average_points: number;
-  total_assists: number;
-  total_rebounds: number;
-  total_blocks: number;
-  total_steals: number;
-}
-
-interface ActivityItem {
-  id: string;
-  type: "login" | "match" | "profile_update" | "role_change";
-  title: string;
-  description: string;
-  timestamp: string;
-  icon: React.ReactNode;
-}
+import { User, UserStats, UpdateProfileResponse, ChangePasswordResponse } from "../types";
 
 export const ProfilePage: React.FC = () => {
-  const { user, logout } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { user, logout, updateUser } = useAuth();
+  const [profile, setProfile] = useState<User | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -83,9 +39,7 @@ export const ProfilePage: React.FC = () => {
     name: "",
     email: "",
     phone: "",
-    bio: "",
     location: "",
-    date_of_birth: "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -105,7 +59,6 @@ export const ProfilePage: React.FC = () => {
     if (user) {
       fetchProfile();
       fetchUserStats();
-      generateActivities();
     }
   }, [user]);
 
@@ -114,13 +67,10 @@ export const ProfilePage: React.FC = () => {
       setLoading(true);
       // For now, we'll use the user data from context
       // In a real app, you'd fetch detailed profile from API
-      const userProfile: UserProfile = {
+      const userProfile: User = {
         ...user!,
         is_active: user!.is_active ?? true,
-        phone: "+255 123 456 789",
-        bio: "Passionate basketball enthusiast and league administrator. Dedicated to promoting the sport in Dar es Salaam.",
-        location: "Dar es Salaam, Tanzania",
-        date_of_birth: "1990-05-15",
+       
       };
 
       setProfile(userProfile);
@@ -128,9 +78,7 @@ export const ProfilePage: React.FC = () => {
         name: userProfile.name,
         email: userProfile.email,
         phone: userProfile.phone || "",
-        bio: userProfile.bio || "",
         location: userProfile.location || "",
-        date_of_birth: userProfile.date_of_birth || "",
       });
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -158,44 +106,6 @@ export const ProfilePage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
-  };
-
-  const generateActivities = () => {
-    const mockActivities: ActivityItem[] = [
-      {
-        id: "1",
-        type: "login",
-        title: "Logged in",
-        description: "Successfully logged into your account",
-        timestamp: new Date().toISOString(),
-        icon: <User size={16} />,
-      },
-      {
-        id: "2",
-        type: "match",
-        title: "Match Result Updated",
-        description: "Updated final score for Lakers vs Celtics match",
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        icon: <Trophy size={16} />,
-      },
-      {
-        id: "3",
-        type: "profile_update",
-        title: "Profile Updated",
-        description: "Updated your profile information",
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        icon: <Edit size={16} />,
-      },
-      {
-        id: "4",
-        type: "role_change",
-        title: "Role Assigned",
-        description: "Assigned as League Administrator",
-        timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        icon: <Shield size={16} />,
-      },
-    ];
-    setActivities(mockActivities);
   };
 
   const validateForm = () => {
@@ -247,12 +157,26 @@ export const ProfilePage: React.FC = () => {
 
     setSaving(true);
     try {
-      // In real app, make API call to update profile
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      // Prepare data to send (exclude email since it's not editable)
+      const updateData = {
+        name: formData.name,
+        phone: formData.phone,
+        location: formData.location,
+      };
 
-      setProfile((prev) => (prev ? { ...prev, ...formData } : null));
-      setEditing(false);
-      toast.success("Profile updated successfully!");
+      // Make API call to update profile
+      const response: UpdateProfileResponse = await put('/profile', updateData);
+
+      if (response.success) {
+        // Update local state and context
+        const updatedProfile = { ...profile!, ...updateData };
+        setProfile(updatedProfile);
+        updateUser(response.data); // Update user in AuthContext
+        setEditing(false);
+        toast.success("Profile updated successfully!");
+      } else {
+        toast.error(response.message || "Failed to update profile");
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Failed to update profile");
@@ -266,19 +190,32 @@ export const ProfilePage: React.FC = () => {
 
     setPasswordSaving(true);
     try {
-      // In real app, make API call to change password
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-
-      setPasswordData({
-        current_password: "",
-        new_password: "",
-        confirm_password: "",
+      // Make API call to change password
+      const response: ChangePasswordResponse = await put('/change-password', {
+        current_password: passwordData.current_password,
+        password: passwordData.new_password,
+        password_confirmation: passwordData.confirm_password,
       });
-      setShowPasswordForm(false);
-      toast.success("Password changed successfully!");
-    } catch (error) {
+
+      if (response.success) {
+        // Reset form and close modal
+        setPasswordData({
+          current_password: "",
+          new_password: "",
+          confirm_password: "",
+        });
+        setShowPasswordForm(false);
+        toast.success("Password changed successfully!");
+      } else {
+        toast.error(response.message || "Failed to change password");
+      }
+    } catch (error: any) {
       console.error("Error changing password:", error);
-      toast.error("Failed to change password");
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Failed to change password");
+      }
     } finally {
       setPasswordSaving(false);
     }
@@ -287,42 +224,6 @@ export const ProfilePage: React.FC = () => {
   const handleLogout = () => {
     logout();
     toast.success("Logged out successfully");
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const formatTimeAgo = (dateString: string) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInMinutes = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60)
-    );
-
-    if (diffInMinutes < 1) return "Just now";
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
-  };
-
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case "login":
-        return "text-blue-600 dark:text-blue-400";
-      case "match":
-        return "text-green-600 dark:text-green-400";
-      case "profile_update":
-        return "text-purple-600 dark:text-purple-400";
-      case "role_change":
-        return "text-orange-600 dark:text-orange-400";
-      default:
-        return "text-neutral-600 dark:text-neutral-400";
-    }
   };
 
   if (loading) {
@@ -492,11 +393,11 @@ export const ProfilePage: React.FC = () => {
                     </div>
 
                     {/* Bio */}
-                    {profile.bio && (
+                    {/* {profile.bio && (
                       <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-6">
                         {profile.bio}
                       </p>
-                    )}
+                    )} */}
                   </div>
 
                   {/* Quick Stats */}
@@ -520,7 +421,7 @@ export const ProfilePage: React.FC = () => {
                     </div>
                     {profile.phone && (
                       <div className="flex items-center space-x-3 text-sm">
-                        <User className="text-neutral-400" size={16} />
+                        <UserIcon className="text-neutral-400" size={16} />
                         <span className="text-neutral-600 dark:text-neutral-400">
                           {profile.phone}
                         </span>
@@ -534,14 +435,14 @@ export const ProfilePage: React.FC = () => {
                         </span>
                       </div>
                     )}
-                    {profile.date_of_birth && (
+                    {/* {profile.date_of_birth && (
                       <div className="flex items-center space-x-3 text-sm">
                         <Calendar className="text-neutral-400" size={16} />
                         <span className="text-neutral-600 dark:text-neutral-400">
                           {formatDate(profile.date_of_birth)}
                         </span>
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </CardBody>
               </Card>
@@ -582,9 +483,7 @@ export const ProfilePage: React.FC = () => {
                               name: profile.name,
                               email: profile.email,
                               phone: profile.phone || "",
-                              bio: profile.bio || "",
                               location: profile.location || "",
-                              date_of_birth: profile.date_of_birth || "",
                             });
                             setErrors({});
                           }}
@@ -623,17 +522,12 @@ export const ProfilePage: React.FC = () => {
                       <Input
                         type="email"
                         value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        disabled={!editing}
-                        className={errors.email ? "border-red-500" : ""}
+                        disabled={true}
+                        className="bg-neutral-100 dark:bg-neutral-700 cursor-not-allowed"
                       />
-                      {errors.email && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.email}
-                        </p>
-                      )}
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                        Email cannot be changed. Contact admin if needed.
+                      </p>
                     </div>
 
                     <div>
@@ -655,23 +549,6 @@ export const ProfilePage: React.FC = () => {
                       )}
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                        Date of Birth
-                      </label>
-                      <Input
-                        type="date"
-                        value={formData.date_of_birth}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            date_of_birth: e.target.value,
-                          })
-                        }
-                        disabled={!editing}
-                      />
-                    </div>
-
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                         Location
@@ -688,20 +565,7 @@ export const ProfilePage: React.FC = () => {
                       />
                     </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                        Bio
-                      </label>
-                      <textarea
-                        value={formData.bio}
-                        onChange={(e) =>
-                          setFormData({ ...formData, bio: e.target.value })
-                        }
-                        disabled={!editing}
-                        rows={4}
-                        className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
-                      />
-                    </div>
+                   
                   </div>
                 </CardBody>
               </Card>

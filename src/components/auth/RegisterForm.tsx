@@ -1,23 +1,30 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, AlertCircle } from "lucide-react";
+// Update the import to include Phone
+import { Mail, Lock, User, AlertCircle, Phone, MapPin } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { Card, CardHeader, CardBody, CardFooter } from "../ui/Card";
 
 export const RegisterForm: React.FC = () => {
+  // Add location state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");  // Add this line
   const [formErrors, setFormErrors] = useState<{
     name?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
+    phone?: string;
+    location?: string;  // Add this line
   }>({});
+
   const { register, isLoading, error } = useAuth();
   const navigate = useNavigate();
 
@@ -27,6 +34,8 @@ export const RegisterForm: React.FC = () => {
       email?: string;
       password?: string;
       confirmPassword?: string;
+      phone?: string;
+      location?: string;  // Add this line
     } = {};
 
     if (!name.trim()) {
@@ -51,6 +60,14 @@ export const RegisterForm: React.FC = () => {
       errors.confirmPassword = "Passwords do not match";
     }
 
+    if (!phone.trim()) {
+      errors.phone = "Phone number is required";
+    }
+
+    if (!location.trim()) {
+      errors.location = "Location is required";
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -59,7 +76,7 @@ export const RegisterForm: React.FC = () => {
     e.preventDefault();
     if (validate()) {
       try {
-        await register(email, password, name);
+        await register(email, password, name, phone, location);  // Add location parameter
         navigate("/dashboard");
       } catch {
         // Error is handled by the AuthContext
@@ -67,6 +84,7 @@ export const RegisterForm: React.FC = () => {
     }
   };
 
+  // In the form, add the location input after the phone input:
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-neutral-50 dark:bg-neutral-900">
       <motion.div
@@ -106,6 +124,29 @@ export const RegisterForm: React.FC = () => {
                 onChange={(e) => setName(e.target.value)}
                 error={formErrors.name}
                 leftIcon={<User size={18} />}
+                required
+              />
+
+              {/* Add the phone input here */}
+              <Input
+                type="tel"
+                label="Phone Number"
+                placeholder="lr phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                error={formErrors.phone}
+                leftIcon={<Phone size={18} />}
+                required
+              />
+
+              <Input
+                type="text"
+                label="Location"
+                placeholder="Enter your location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                error={formErrors.location}
+                leftIcon={<MapPin size={18} />}
                 required
               />
 

@@ -14,6 +14,7 @@ import {
   Calendar,
   CheckCircle,
   User,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -54,6 +55,12 @@ const DashboardLayout: React.FC = () => {
       name: "Manage Teams",
       path: "/admin/teams",
       icon: <Group size={20} />,
+      roles: ["admin"],
+    },
+    {
+      name: "Manage Venues",
+      path: "/admin/venues",
+      icon: <MapPin size={20} />,
       roles: ["admin"],
     },
     {

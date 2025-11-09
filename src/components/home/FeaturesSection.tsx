@@ -39,46 +39,46 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, ind
 
 export const FeaturesSection: React.FC = () => {
   const features = [
-    {
-      title: 'Real-time Statistics',
-      description: 'Track game stats as they happen with our live updating system.',
-      icon: <Zap size={24} />
-    },
-    {
-      title: 'Performance Analytics',
-      description: 'Dive deep into player performance with advanced analytics.',
-      icon: <LineChart size={24} />
-    },
-    {
-      title: 'Live Match Tracking',
-      description: 'Follow games in real-time with play-by-play updates.',
-      icon: <Clock size={24} />
-    },
-    {
-      title: 'Team Management',
-      description: 'Manage team rosters, schedules, and performance metrics.',
-      icon: <Users size={24} />
-    },
-    {
-      title: 'Tournament Brackets',
-      description: 'Create and manage tournament brackets with automatic updates.',
-      icon: <Trophy size={24} />
-    },
-    {
-      title: 'Player Search',
-      description: 'Find detailed statistics for any player in the database.',
-      icon: <Search size={24} />
-    },
-    {
-      title: 'Visual Reports',
-      description: 'Generate visual reports to easily understand team trends.',
-      icon: <BarChart3 size={24} />
-    },
-    {
-      title: 'Secure Data',
-      description: 'All your team and player data is securely stored and backed up.',
-      icon: <ShieldCheck size={24} />
-    }
+    // {
+    //   title: 'Real-time Statistics',
+    //   description: 'Track game stats as they happen with our live updating system.',
+    //   icon: <Zap size={24} />
+    // },
+    // {
+    //   title: 'Performance Analytics',
+    //   description: 'Dive deep into player performance with advanced analytics.',
+    //   icon: <LineChart size={24} />
+    // },
+    // {
+    //   title: 'Live Match Tracking',
+    //   description: 'Follow games in real-time with play-by-play updates.',
+    //   icon: <Clock size={24} />
+    // },
+    // {
+    //   title: 'Team Management',
+    //   description: 'Manage team rosters, schedules, and performance metrics.',
+    //   icon: <Users size={24} />
+    // },
+    // {
+    //   title: 'Tournament Brackets',
+    //   description: 'Create and manage tournament brackets with automatic updates.',
+    //   icon: <Trophy size={24} />
+    // },
+    // {
+    //   title: 'Player Search',
+    //   description: 'Find detailed statistics for any player in the database.',
+    //   icon: <Search size={24} />
+    // },
+    // {
+    //   title: 'Visual Reports',
+    //   description: 'Generate visual reports to easily understand team trends.',
+    //   icon: <BarChart3 size={24} />
+    // },
+    // {
+    //   title: 'Secure Data',
+    //   description: 'All your team and player data is securely stored and backed up.',
+    //   icon: <ShieldCheck size={24} />
+    // }
   ];
 
   return (
@@ -92,7 +92,7 @@ export const FeaturesSection: React.FC = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            Powerful Features for Basketball Enthusiasts
+            The Court Comes Home,No More Missing the Action!
           </motion.h2>
           <motion.p
             className="text-lg text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto"
@@ -101,7 +101,7 @@ export const FeaturesSection: React.FC = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Everything you need to track, analyze, and improve basketball performance.
+           Watch Every Second of the Action Live on Azam TV
           </motion.p>
         </div>
 

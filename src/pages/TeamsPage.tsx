@@ -38,10 +38,14 @@ export const TeamsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch teams from API
       const response = await get<{ success: boolean; data: Team[] }>("/teams");
+      console.log('API Response:', response); // Debug log
 
       if (response.success && response.data) {
+        // Log the first team's logo URL for debugging
+        if (response.data.length > 0) {
+          console.log('First team logo path:', response.data[0].logo);
+        }
         setTeams(response.data);
       } else {
         setTeams([]);
@@ -230,11 +234,10 @@ export const TeamsPage: React.FC = () => {
                       <div className="flex justify-center mb-4">
                         <div className="relative">
                           <img
-                            src={team.logo_url || team.logo}
+                            src={`http://127.0.0.1:8000/storage/${team.logo}` || team.logo_url}
                             alt={team.name}
                             className="w-20 h-20 object-cover rounded-full border-4 border-white dark:border-neutral-700 shadow-lg group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => {
-                              // Fallback to a default image or show initials if image fails to load
                               const target = e.target as HTMLImageElement;
                               target.style.display = "none";
                               const parent = target.parentElement;
@@ -242,9 +245,7 @@ export const TeamsPage: React.FC = () => {
                                 const fallback = document.createElement("div");
                                 fallback.className =
                                   "w-20 h-20 rounded-full border-4 border-white dark:border-neutral-700 shadow-lg bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xl";
-                                fallback.textContent = team.name
-                                  .slice(0, 2)
-                                  .toUpperCase();
+                                fallback.textContent = team.name.slice(0, 2).toUpperCase();
                                 parent.appendChild(fallback);
                               }
                             }}

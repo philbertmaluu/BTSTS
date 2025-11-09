@@ -25,7 +25,15 @@ interface Fixture {
   };
   fixture_date: string;
   fixture_time: string;
-  venue: string;
+  venue: {
+    id: number;
+    name: string;
+    location: string;
+    capacity: number;
+    created_at: string;
+    updated_at: string;
+  };
+  venue_id: number;
   status: "Scheduled" | "In Progress" | "Completed" | "Cancelled";
   season_id: number;
   statistician_id?: number;
@@ -39,6 +47,13 @@ interface Team {
   logo?: string;
   logo_url?: string;
 }
+
+interface Venue {
+    id: number;
+    name: string; 
+    location: string;
+    capacity: number;
+  }
 
 interface Statistician {
   id: number;
@@ -66,12 +81,19 @@ interface Statistician {
   }>;
 }
 
-interface CreateFixtureData {
+interface Venue {
+  id: number;
+  name: string;
+  location: string;
+  capacity: number;
+  created_at: string;
+  updated_at: string;
+}interface CreateFixtureData {
   home_team_id: string | number;
   away_team_id: string | number;
   fixture_date: string;
   fixture_time: string;
-  venue: string;
+  venue_id: string | number;
   season_id: number;
   statician_id?: string | number;
 }
@@ -114,9 +136,11 @@ interface StatisticiansResponse {
 export const FixturesPage: React.FC = () => {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [statisticians, setStatisticians] = useState<Statistician[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamsLoading, setTeamsLoading] = useState(true);
+  const [venuesLoading, setVenuesLoading] = useState(true);
   const [statisticiansLoading, setStatisticiansLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -127,7 +151,7 @@ export const FixturesPage: React.FC = () => {
     away_team_id: "",
     fixture_date: "",
     fixture_time: "",
-    venue: "",
+    venue_id: "",
     season_id: 1, // Default season
     statician_id: "",
   });
@@ -137,6 +161,7 @@ export const FixturesPage: React.FC = () => {
   useEffect(() => {
     fetchFixtures();
     fetchTeams();
+    fetchVenues();
     fetchStatisticians();
   }, []);
 
@@ -188,6 +213,33 @@ export const FixturesPage: React.FC = () => {
       toast.error("Failed to load teams");
     } finally {
       setTeamsLoading(false);
+    }
+  };
+
+  const fetchVenues = async () => {
+    try {
+      setVenuesLoading(true);
+      const response = await get<Venue[]>("/venues");
+      if (Array.isArray(response)) {
+        setVenues(response);
+      } else if (
+        response &&
+        typeof response === "object" &&
+        "data" in response
+      ) {
+        // Handle wrapped response format
+        const responseData = response as { data: Venue[] };
+        setVenues(Array.isArray(responseData.data) ? responseData.data : []);
+      } else {
+        console.error("Unexpected venues response format:", response);
+        setVenues([]);
+      }
+    } catch (error) {
+      console.error("Error fetching venues:", error);
+      setVenues([]);
+      toast.error("Failed to load venues");
+    } finally {
+      setVenuesLoading(false);
     }
   };
 
@@ -256,8 +308,8 @@ export const FixturesPage: React.FC = () => {
       errors.fixture_time = "Fixture time is required";
     }
 
-    if (!formData.venue.trim()) {
-      errors.venue = "Venue is required";
+    if (!formData.venue_id) {
+      errors.venue_id = "Venue is required";
     }
 
     if (!formData.statician_id) {
@@ -289,6 +341,10 @@ export const FixturesPage: React.FC = () => {
           typeof formData.away_team_id === "string"
             ? parseInt(formData.away_team_id) || 0
             : formData.away_team_id,
+        venue_id:
+          typeof formData.venue_id === "string"
+            ? parseInt(formData.venue_id) || 0
+            : formData.venue_id,
         statician_id:
           typeof formData.statician_id === "string"
             ? parseInt(formData.statician_id) || 0
@@ -318,7 +374,7 @@ export const FixturesPage: React.FC = () => {
           away_team_id: "",
           fixture_date: "",
           fixture_time: "",
-          venue: "",
+          venue_id: "",
           season_id: 1,
           statician_id: "",
         });
@@ -388,7 +444,7 @@ export const FixturesPage: React.FC = () => {
       away_team_id: fixture.away_team_id,
       fixture_date: scheduledDate.toISOString().split("T")[0], // Format as YYYY-MM-DD
       fixture_time: scheduledDate.toTimeString().substring(0, 5), // Format as HH:MM
-      venue: fixture.venue,
+      venue_id: fixture.venue_id,
       season_id: fixture.season_id,
       statician_id: fixture.statistician_id || "",
     });
@@ -399,7 +455,7 @@ export const FixturesPage: React.FC = () => {
     const matchesSearch =
       fixture.home_team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       fixture.away_team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fixture.venue.toLowerCase().includes(searchTerm.toLowerCase());
+      fixture.venue.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || fixture.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -641,7 +697,7 @@ export const FixturesPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-neutral-900 dark:text-white">
-                          {fixture.venue}
+                          {fixture.venue.name}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -712,7 +768,7 @@ export const FixturesPage: React.FC = () => {
                       away_team_id: "",
                       fixture_date: "",
                       fixture_time: "",
-                      venue: "",
+                      venue_id: "",
                       season_id: 1,
                       statician_id: "",
                     });
@@ -841,15 +897,35 @@ export const FixturesPage: React.FC = () => {
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     Venue *
                   </label>
-                  <Input
-                    value={formData.venue}
-                    onChange={(e) => handleInputChange("venue", e.target.value)}
-                    placeholder="Enter venue"
-                    className={formErrors.venue ? "border-red-500" : ""}
-                  />
-                  {formErrors.venue && (
+                  <select
+                    value={formData.venue_id || ""}
+                    onChange={(e) =>
+                      handleInputChange("venue_id", e.target.value)
+                    }
+                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      formErrors.venue_id
+                        ? "border-red-500"
+                        : "border-neutral-300 dark:border-neutral-600"
+                    }`}
+                    disabled={venuesLoading}
+                  >
+                    <option value="">
+                      {venuesLoading ? "Loading venues..." : "Select Venue"}
+                    </option>
+                    {venues.length === 0 && !venuesLoading && (
+                      <option value="" disabled>
+                        No venues available
+                      </option>
+                    )}
+                    {venues.map((venue) => (
+                      <option key={venue.id} value={venue.id}>
+                        {venue.name} - {venue.location} (Capacity: {venue.capacity})
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.venue_id && (
                     <p className="text-red-500 text-sm mt-1">
-                      {formErrors.venue}
+                      {formErrors.venue_id}
                     </p>
                   )}
                 </div>
@@ -918,7 +994,7 @@ export const FixturesPage: React.FC = () => {
                         away_team_id: "",
                         fixture_date: "",
                         fixture_time: "",
-                        venue: "",
+                        venue_id: "",
                         season_id: 1,
                         statician_id: "",
                       });

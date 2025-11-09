@@ -13,6 +13,16 @@ export interface Team {
   losses: number;
 }
 
+// Venue types
+export interface Venue {
+  id: number;
+  name: string;
+  location: string;
+  capacity: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // Player types
 export interface Player {
   id: string;
@@ -97,6 +107,31 @@ export interface User {
   updated_at: string;
   roles: Role[];
   avatar?: string;
+  phone?: string;
+  location?: string;
+}
+
+export interface UserStats {
+  total_matches: number;
+  matches_won: number;
+  matches_lost: number;
+  total_points: number;
+  average_points: number;
+  total_assists: number;
+  total_rebounds: number;
+  total_blocks: number;
+  total_steals: number;
+}
+
+export interface UpdateProfileResponse {
+  success: boolean;
+  message: string;
+  data: User;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
 }
 
 // Theme type
