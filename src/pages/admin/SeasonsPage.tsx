@@ -1,135 +1,150 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, Search, X } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, Calendar, CheckCircle2 } from "lucide-react";
 import { Card, CardBody } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { get, post, put, del } from "../../api/baseApi";
 import toast, { Toaster } from "react-hot-toast";
 
-interface Coach {
+interface Season {
   id: number;
   name: string;
-  email: string;
-  email_verified_at: string | null;
-  status: string;
+  year: number;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
-}
-
-interface Team {
-  id: number;
-  name: string;
-  logo: string | null;
-  coach_id: number;
-  created_at: string;
-  updated_at: string;
-  coach: Coach;
-  logo_url?: string;
 }
 
 interface ApiResponse {
   success: boolean;
-  data: Team[];
+  data: Season[];
 }
 
-interface CreateTeamData {
+interface CreateSeasonData {
   name: string;
-  logo: File | null;
-  coach_id: number;
+  year: number;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
 }
 
-interface CreateTeamResponse {
+interface CreateSeasonResponse {
   success: boolean;
   message: string;
-  data?: Team;
+  data?: Season;
   errors?: Record<string, string[]>;
 }
 
-export const TeamsPage2: React.FC = () => {
-  const [teams, setTeams] = useState<Team[]>([]);
+export const SeasonsPage: React.FC = () => {
+  const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-  const [formData, setFormData] = useState<CreateTeamData>({
+  const [editingSeason, setEditingSeason] = useState<Season | null>(null);
+  const [formData, setFormData] = useState<CreateSeasonData>({
     name: "",
-    logo: null,
-    coach_id: 1,
+    year: new Date().getFullYear(),
+    start_date: "",
+    end_date: "",
+    is_active: false,
   });
   const [formErrors, setFormErrors] = useState<{
     name?: string;
-    logo?: string;
+    year?: string;
+    start_date?: string;
+    end_date?: string;
   }>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchTeams();
+    fetchSeasons();
   }, []);
 
-  const fetchTeams = async () => {
+  const fetchSeasons = async () => {
     try {
       setLoading(true);
-      const response = await get<ApiResponse>("/teams");
+      const response = await get<ApiResponse>("/seasons");
 
-      // Handle the API response structure
       if (response.success && Array.isArray(response.data)) {
-        setTeams(response.data);
+        setSeasons(response.data);
       } else {
         console.error("Unexpected API response format:", response);
-        setTeams([]);
+        setSeasons([]);
       }
     } catch (error) {
-      console.error("Error fetching teams:", error);
-      setTeams([]);
-      toast.error("Failed to load teams");
+      console.error("Error fetching seasons:", error);
+      setSeasons([]);
+      toast.error("Failed to load seasons");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteTeam = async (teamId: number) => {
-    if (window.confirm("Are you sure you want to delete this team?")) {
+  const handleDeleteSeason = async (seasonId: number) => {
+    if (window.confirm("Are you sure you want to delete this season?")) {
       try {
-        await del(`/teams/${teamId}`);
-        await fetchTeams();
-        toast.success("Team deleted successfully");
+        await del(`/seasons/${seasonId}`);
+        await fetchSeasons();
+        toast.success("Season deleted successfully");
       } catch (error) {
-        console.error("Error deleting team:", error);
-        toast.error("Failed to delete team");
+        console.error("Error deleting season:", error);
+        toast.error("Failed to delete season");
       }
     }
   };
 
+  const handleSetActiveSeason = async (seasonId: number) => {
+    try {
+      const response = await put<CreateSeasonResponse>(
+        `/seasons/${seasonId}`,
+        { is_active: true }
+      );
+
+      if (response.success) {
+        toast.success("Season set as active successfully");
+        await fetchSeasons();
+      } else {
+        toast.error(response.message || "Failed to set season as active");
+      }
+    } catch (error) {
+      console.error("Error setting active season:", error);
+      toast.error("Failed to set season as active");
+    }
+  };
+
   const validateForm = (): boolean => {
-    const errors: { name?: string; logo?: string } = {};
+    const errors: {
+      name?: string;
+      year?: string;
+      start_date?: string;
+      end_date?: string;
+    } = {};
 
     if (!formData.name.trim()) {
-      errors.name = "Team name is required";
+      errors.name = "Season name is required";
     }
 
-    // Logo is required only when creating a new team, optional when editing
-    if (!editingTeam && !formData.logo) {
-      errors.logo = "Logo is required";
-    } else if (formData.logo) {
-      // Validate file type based on backend requirements
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/svg+xml",
-      ];
-      if (!allowedTypes.includes(formData.logo.type)) {
-        errors.logo =
-          "Please select a valid image file (JPEG, PNG, GIF, or SVG)";
-      }
+    if (!formData.year || formData.year < 2000 || formData.year > 2100) {
+      errors.year = "Please enter a valid year";
+    }
 
-      // Validate file size (2MB limit as per backend)
-      const maxSize = 2 * 1024 * 1024; // 2MB
-      if (formData.logo.size > maxSize) {
-        errors.logo = "File size must be less than 2MB";
-      }
+    if (!formData.start_date) {
+      errors.start_date = "Start date is required";
+    }
+
+    if (!formData.end_date) {
+      errors.end_date = "End date is required";
+    }
+
+    if (
+      formData.start_date &&
+      formData.end_date &&
+      new Date(formData.start_date) >= new Date(formData.end_date)
+    ) {
+      errors.end_date = "End date must be after start date";
     }
 
     setFormErrors(errors);
@@ -146,84 +161,41 @@ export const TeamsPage2: React.FC = () => {
     setSubmitting(true);
 
     try {
-      // Create FormData for file upload
-      const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.name);
-      formDataToSend.append("coach_id", formData.coach_id.toString());
-
-      if (formData.logo) {
-        formDataToSend.append("logo", formData.logo);
-        console.log(
-          "Appending logo file:",
-          formData.logo.name,
-          formData.logo.size,
-          formData.logo.type
-        );
-      }
-
-      // Log FormData contents for debugging
-      console.log("FormData entries:");
-      for (const [key, value] of formDataToSend.entries()) {
-        console.log(
-          "FormData entry:",
-          key,
-          value instanceof File
-            ? `File: ${value.name} (${value.size} bytes)`
-            : value
-        );
-      }
-
-      console.log("Sending request to /teams with FormData...");
-
       let response;
-      if (editingTeam) {
-        // Use PUT for updates
-        response = await put<CreateTeamResponse>(
-          `/teams/${editingTeam.id}`,
-          formDataToSend
+      if (editingSeason) {
+        response = await put<CreateSeasonResponse>(
+          `/seasons/${editingSeason.id}`,
+          formData
         );
       } else {
-        // Use POST for creating new teams
-        response = await post<CreateTeamResponse>("/teams", formDataToSend);
+        response = await post<CreateSeasonResponse>("/seasons", formData);
       }
 
       if (response.success) {
-        const wasEditing = !!editingTeam;
-        
         toast.success(
-          editingTeam
-            ? "Team updated successfully"
-            : "Team created successfully"
+          editingSeason
+            ? "Season updated successfully"
+            : "Season created successfully"
         );
-        
-        // Close modal and reset form
         setShowAddModal(false);
-        setEditingTeam(null);
-        setFormData({ name: "", logo: null, coach_id: 1 });
+        setEditingSeason(null);
+        setFormData({
+          name: "",
+          year: new Date().getFullYear(),
+          start_date: "",
+          end_date: "",
+          is_active: false,
+        });
         setFormErrors({});
-        
-        // Reset file input
-        const fileInput = document.querySelector(
-          'input[type="file"][name="logo"]'
-        ) as HTMLInputElement;
-        if (fileInput) fileInput.value = "";
-        
-        // Refresh teams list to show the updated data
-        await fetchTeams();
-        
-        // Show success message with the new logo info if it was an update with logo
-        if (wasEditing && formDataToSend.has('logo')) {
-          toast.success("Logo updated successfully!", { duration: 2000 });
-        }
+        await fetchSeasons();
       } else {
         toast.error(
           response.message ||
-            (editingTeam ? "Failed to update team" : "Failed to create team")
+            (editingSeason ? "Failed to update season" : "Failed to create season")
         );
       }
     } catch (error: unknown) {
-      console.error("Error creating team:", error);
-
+      console.error("Error saving season:", error);
       if (error && typeof error === "object" && "response" in error) {
         const apiError = error as {
           response?: {
@@ -232,18 +204,17 @@ export const TeamsPage2: React.FC = () => {
         };
 
         if (apiError.response?.data?.errors) {
-          // Handle validation errors
           const validationErrors = apiError.response.data.errors;
           Object.keys(validationErrors).forEach((key) => {
             toast.error(validationErrors[key][0]);
           });
         } else {
           toast.error(
-            apiError.response?.data?.message || "Failed to create team"
+            apiError.response?.data?.message || "Failed to save season"
           );
         }
       } else {
-        toast.error("Failed to create team");
+        toast.error("Failed to save season");
       }
     } finally {
       setSubmitting(false);
@@ -251,20 +222,22 @@ export const TeamsPage2: React.FC = () => {
   };
 
   const handleInputChange = (
-    field: keyof CreateTeamData,
-    value: string | number | File
+    field: keyof CreateSeasonData,
+    value: string | number | boolean
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (field === "name" && formErrors.name) {
-      setFormErrors((prev) => ({ ...prev, name: undefined }));
+    if (formErrors[field as keyof typeof formErrors]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [field]: undefined,
+      }));
     }
   };
 
-  const filteredTeams = (teams || []).filter((team) => {
-    const matchesSearch = team.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+  const filteredSeasons = (seasons || []).filter((season) => {
+    const matchesSearch =
+      season.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      season.year.toString().includes(searchTerm);
     return matchesSearch;
   });
 
@@ -281,7 +254,7 @@ export const TeamsPage2: React.FC = () => {
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto"></div>
         <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-          Loading teams...
+          Loading seasons...
         </p>
       </div>
     );
@@ -324,17 +297,17 @@ export const TeamsPage2: React.FC = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-                Manage Teams
+                Manage Seasons
               </h1>
               <p className="text-neutral-600 dark:text-neutral-400">
-                View and manage basketball teams
+                View and manage basketball seasons
               </p>
             </div>
             <Button
               onClick={() => setShowAddModal(true)}
               leftIcon={<Plus size={16} />}
             >
-              Add Team
+              Add Season
             </Button>
           </div>
 
@@ -344,7 +317,7 @@ export const TeamsPage2: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <Input
-                    placeholder="Search teams..."
+                    placeholder="Search seasons..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     leftIcon={<Search size={16} />}
@@ -354,14 +327,14 @@ export const TeamsPage2: React.FC = () => {
             </CardBody>
           </Card>
 
-          {/* Teams Table */}
+          {/* Seasons Table */}
           <Card className="overflow-hidden">
             <div className="bg-gradient-to-r from-primary-500 to-primary-600 dark:from-neutral-800 dark:to-neutral-900 text-white p-6">
               <h2 className="text-xl font-bold">
-                Teams ({filteredTeams.length})
+                Seasons ({filteredSeasons.length})
               </h2>
               <p className="text-white/90 dark:text-neutral-300 text-sm mt-1">
-                Basketball Development League Teams
+                Basketball Development League Seasons
               </p>
             </div>
 
@@ -370,10 +343,16 @@ export const TeamsPage2: React.FC = () => {
                 <thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                      Team
+                      Season
                     </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                      Created
+                      Year
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Duration
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Status
                     </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Actions
@@ -381,9 +360,9 @@ export const TeamsPage2: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                  {filteredTeams.map((team, index) => (
+                  {filteredSeasons.map((season, index) => (
                     <motion.tr
-                      key={team.id}
+                      key={season.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -391,57 +370,64 @@ export const TeamsPage2: React.FC = () => {
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            {team.logo_url ? (
-                              <img
-                                key={`${team.id}-${team.updated_at}`}
-                                className="h-10 w-10 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-700"
-                                src={`${team.logo_url}?t=${new Date(team.updated_at).getTime()}`}
-                                alt={team.name}
-                                onError={(e) => {
-                                  // Fallback if image fails to load
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  if (target.nextElementSibling) {
-                                    (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                                  }
-                                }}
-                              />
-                            ) : null}
-                            <div 
-                              className={`h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-2 border-neutral-200 dark:border-neutral-700 ${team.logo_url ? 'hidden' : ''}`}
-                            >
-                              <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
-                                {team.name[0]}
-                              </span>
-                            </div>
+                          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900 border-2 border-neutral-200 dark:border-neutral-700">
+                            <Calendar className="text-primary-600 dark:text-primary-400" size={20} />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-semibold text-neutral-900 dark:text-white">
-                              {team.name}
+                              {season.name}
                             </div>
                             <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                              ID: {team.id}
+                              ID: {season.id}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                          {formatDate(team.created_at)}
+                          {season.year}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="text-sm text-neutral-900 dark:text-white">
+                          {formatDate(season.start_date)} - {formatDate(season.end_date)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <span
+                          className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                            season.is_active
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                              : "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-400"
+                          }`}
+                        >
+                          {season.is_active ? "Active" : "Inactive"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center space-x-2">
+                          {!season.is_active && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSetActiveSeason(season.id)}
+                              leftIcon={<CheckCircle2 size={14} />}
+                              className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                            >
+                              Set Active
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setEditingTeam(team);
+                              setEditingSeason(season);
                               setFormData({
-                                name: team.name,
-                                logo: null,
-                                coach_id: team.coach_id,
+                                name: season.name,
+                                year: season.year,
+                                start_date: season.start_date,
+                                end_date: season.end_date,
+                                is_active: season.is_active,
                               });
                               setShowAddModal(true);
                             }}
@@ -452,9 +438,9 @@ export const TeamsPage2: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDeleteTeam(team.id)}
+                            onClick={() => handleDeleteSeason(season.id)}
                             leftIcon={<Trash2 size={14} />}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                           >
                             Delete
                           </Button>
@@ -466,17 +452,17 @@ export const TeamsPage2: React.FC = () => {
               </table>
             </div>
 
-            {filteredTeams.length === 0 && (
+            {filteredSeasons.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-neutral-600 dark:text-neutral-400">
-                  No teams found matching your criteria.
+                  No seasons found matching your criteria.
                 </p>
               </div>
             )}
           </Card>
         </div>
 
-        {/* Add Team Modal */}
+        {/* Add/Edit Season Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
             <motion.div
@@ -487,19 +473,20 @@ export const TeamsPage2: React.FC = () => {
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
-                  {editingTeam ? "Edit Team" : "Add New Team"}
+                  {editingSeason ? "Edit Season" : "Add New Season"}
                 </h2>
                 <button
                   onClick={() => {
                     setShowAddModal(false);
-                    setEditingTeam(null);
-                    setFormData({ name: "", logo: null, coach_id: 1 });
+                    setEditingSeason(null);
+                    setFormData({
+                      name: "",
+                      year: new Date().getFullYear(),
+                      start_date: "",
+                      end_date: "",
+                      is_active: false,
+                    });
                     setFormErrors({});
-                    // Reset file input
-                    const fileInput = document.querySelector(
-                      'input[type="file"]'
-                    ) as HTMLInputElement;
-                    if (fileInput) fileInput.value = "";
                   }}
                   className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
                 >
@@ -510,12 +497,12 @@ export const TeamsPage2: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Team Name *
+                    Season Name *
                   </label>
                   <Input
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Enter team name"
+                    placeholder="e.g., BDL Season 2024/2025"
                     className={formErrors.name ? "border-red-500" : ""}
                   />
                   {formErrors.name && (
@@ -527,57 +514,80 @@ export const TeamsPage2: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    Logo {editingTeam ? "(Optional - leave empty to keep current)" : "*"}
+                    Year *
                   </label>
-                  
-                  {/* Show current logo when editing */}
-                  {editingTeam && editingTeam.logo_url && !formData.logo && (
-                    <div className="mb-3 p-3 bg-neutral-50 dark:bg-neutral-700 rounded-lg">
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
-                        Current Logo:
-                      </p>
-                      <img
-                        key={`modal-${editingTeam.id}-${editingTeam.updated_at}`}
-                        src={`${editingTeam.logo_url}?t=${new Date(editingTeam.updated_at).getTime()}`}
-                        alt={editingTeam.name}
-                        className="h-20 w-20 object-cover rounded-lg border-2 border-neutral-300 dark:border-neutral-600"
-                      />
-                    </div>
-                  )}
-                  
-                  <input
-                    type="file"
-                    name="logo"
-                    accept="image/*"
-                    onChange={(e) => {
-                      console.log(e.target.files);
-                      if (e.target.files && e.target.files.length > 0) {
-                        const file = e.target.files[0];
-                        handleInputChange("logo", file);
-                      }
-                    }}
-                    className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                      formErrors.logo
-                        ? "border-red-500"
-                        : "border-neutral-300 dark:border-neutral-600"
-                    }`}
+                  <Input
+                    type="number"
+                    value={formData.year}
+                    onChange={(e) =>
+                      handleInputChange("year", parseInt(e.target.value))
+                    }
+                    placeholder="2024"
+                    min="2000"
+                    max="2100"
+                    className={formErrors.year ? "border-red-500" : ""}
                   />
-                  {formErrors.logo && (
+                  {formErrors.year && (
                     <p className="text-red-500 text-sm mt-1">
-                      {formErrors.logo}
+                      {formErrors.year}
                     </p>
                   )}
-                  {formData.logo && (
-                    <div className="mt-2 p-2 bg-neutral-50 dark:bg-neutral-700 rounded-lg">
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                        New logo selected: {formData.logo.name}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-500">
-                        Size: {(formData.logo.size / 1024).toFixed(1)} KB |
-                        Type: {formData.logo.type}
-                      </p>
-                    </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    Start Date *
+                  </label>
+                  <Input
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) =>
+                      handleInputChange("start_date", e.target.value)
+                    }
+                    className={formErrors.start_date ? "border-red-500" : ""}
+                  />
+                  {formErrors.start_date && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.start_date}
+                    </p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    End Date *
+                  </label>
+                  <Input
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) =>
+                      handleInputChange("end_date", e.target.value)
+                    }
+                    className={formErrors.end_date ? "border-red-500" : ""}
+                  />
+                  {formErrors.end_date && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.end_date}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    id="is_active"
+                    type="checkbox"
+                    checked={formData.is_active}
+                    onChange={(e) =>
+                      handleInputChange("is_active", e.target.checked)
+                    }
+                    className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-neutral-300 dark:border-neutral-600 rounded bg-white dark:bg-neutral-700"
+                  />
+                  <label
+                    htmlFor="is_active"
+                    className="ml-2 block text-sm text-neutral-700 dark:text-neutral-300"
+                  >
+                    Mark as Active Season
+                  </label>
                 </div>
 
                 <div className="flex space-x-3 pt-4">
@@ -587,26 +597,27 @@ export const TeamsPage2: React.FC = () => {
                     className="flex-1"
                   >
                     {submitting
-                      ? editingTeam
+                      ? editingSeason
                         ? "Updating..."
                         : "Creating..."
-                      : editingTeam
-                      ? "Update Team"
-                      : "Create Team"}
+                      : editingSeason
+                      ? "Update Season"
+                      : "Create Season"}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => {
                       setShowAddModal(false);
-                      setEditingTeam(null);
-                      setFormData({ name: "", logo: null, coach_id: 1 });
+                      setEditingSeason(null);
+                      setFormData({
+                        name: "",
+                        year: new Date().getFullYear(),
+                        start_date: "",
+                        end_date: "",
+                        is_active: false,
+                      });
                       setFormErrors({});
-                      // Reset file input
-                      const fileInput = document.querySelector(
-                        'input[type="file"]'
-                      ) as HTMLInputElement;
-                      if (fileInput) fileInput.value = "";
                     }}
                     disabled={submitting}
                   >
@@ -621,3 +632,4 @@ export const TeamsPage2: React.FC = () => {
     </>
   );
 };
+

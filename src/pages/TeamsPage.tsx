@@ -233,23 +233,30 @@ export const TeamsPage: React.FC = () => {
                       {/* Team Logo */}
                       <div className="flex justify-center mb-4">
                         <div className="relative">
-                          <img
-                            src={`http://127.0.0.1:8000/storage/${team.logo}` || team.logo_url}
-                            alt={team.name}
-                            className="w-20 h-20 object-cover rounded-full border-4 border-white dark:border-neutral-700 shadow-lg group-hover:scale-110 transition-transform duration-300"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = "none";
-                              const parent = target.parentElement;
-                              if (parent) {
-                                const fallback = document.createElement("div");
-                                fallback.className =
-                                  "w-20 h-20 rounded-full border-4 border-white dark:border-neutral-700 shadow-lg bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xl";
-                                fallback.textContent = team.name.slice(0, 2).toUpperCase();
-                                parent.appendChild(fallback);
-                              }
-                            }}
-                          />
+                          {team.logo_url ? (
+                            <img
+                              key={`team-${team.id}-${team.updated_at}`}
+                              src={`${team.logo_url}?t=${team.updated_at ? new Date(team.updated_at).getTime() : Date.now()}`}
+                              alt={team.name}
+                              className="w-20 h-20 object-cover rounded-full border-4 border-white dark:border-neutral-700 shadow-lg group-hover:scale-110 transition-transform duration-300"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  const fallback = document.createElement("div");
+                                  fallback.className =
+                                    "w-20 h-20 rounded-full border-4 border-white dark:border-neutral-700 shadow-lg bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xl";
+                                  fallback.textContent = team.name.slice(0, 2).toUpperCase();
+                                  parent.appendChild(fallback);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-20 h-20 rounded-full border-4 border-white dark:border-neutral-700 shadow-lg bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xl">
+                              {team.name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
                           <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                             <span className="text-xs font-bold text-white">
                               {team.name.slice(0, 2).toUpperCase()}

@@ -23,6 +23,7 @@ import { MatchResultsPage } from "./pages/admin/MatchResultsPage";
 import { TeamsPage2 } from "./pages/admin/TeamsPage";
 import { UsersPage } from "./pages/admin/UsersPage";
 import { VenuesPage } from "./pages/admin/VenuesPage";
+import { SeasonsPage } from "./pages/admin/SeasonsPage";
 import MatchResults from "./pages/MatchResults";
 import { ProfilePage } from "./pages/profile";
 
@@ -66,9 +67,10 @@ function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 {/* <Route path="/dashboard/profile" element={<ProfilePage />} /> */}
                 <Route path="/admin/teams" element={<TeamsPage2 />} />
+                <Route path="/admin/venues" element={<VenuesPage />} />
+                <Route path="/admin/seasons" element={<SeasonsPage />} />
                 <Route path="/admin/fixtures" element={<FixturesPage />} />
                 <Route path="/admin/users" element={<UsersPage />} />
-                <Route path="/admin/venues" element={<VenuesPage />} />
                 <Route path="/profile" element={<ProfilePage />} /> 
                 <Route
                   path="/admin/match-results"

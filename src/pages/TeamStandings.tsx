@@ -49,6 +49,7 @@ interface Season {
   id: number;
   name: string;
   year: number;
+  is_active: boolean;
 }
 
 const TeamStandingsPage: React.FC = () => {
@@ -58,6 +59,7 @@ const TeamStandingsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+  const [activeSeason, setActiveSeason] = useState<Season | null>(null);
 
   // Move fetchTeamStandings inside component
   const fetchTeamStandings = async (seasonId?: number) => {
@@ -94,8 +96,13 @@ const TeamStandingsPage: React.FC = () => {
       const response = await get("/seasons");
       if (response.success) {
         setSeasons(response.data);
-        // Set the most recent season as default
-        if (response.data.length > 0) {
+        // Find and set the active season
+        const active = response.data.find((s: Season) => s.is_active);
+        if (active) {
+          setActiveSeason(active);
+          setSelectedSeason(active.id);
+        } else if (response.data.length > 0) {
+          // Fallback to first season if no active season
           setSelectedSeason(response.data[0].id);
         }
       }
@@ -282,7 +289,7 @@ const TeamStandingsPage: React.FC = () => {
                   </Card>
                 </motion.div>
 
-                {/* Season Selector Card */}
+                {/* Current Season Card */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -295,18 +302,12 @@ const TeamStandingsPage: React.FC = () => {
                           <p className="text-purple-100 text-sm font-medium">
                             Current Season
                           </p>
-                          <select
-                            value={selectedSeason || ""}
-                            onChange={(e) => setSelectedSeason(Number(e.target.value) || null)}
-                            className="mt-2 bg-white/20 border border-purple-400 rounded-md px-3 py-1 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-white"
-                          >
-                            <option value="">All Seasons</option>
-                            {seasons.map((season) => (
-                              <option key={season.id} value={season.id}>
-                                {season.name}
-                              </option>
-                            ))}
-                          </select>
+                          <p className="text-2xl font-bold mt-1">
+                            {activeSeason ? activeSeason.name : 'No Active Season'}
+                          </p>
+                          {/* <p className="text-purple-100 text-xs mt-1">
+                            {activeSeason ? activeSeason.year : ''}
+                          </p> */}
                         </div>
                         <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                           <Calendar className="w-6 h-6" />
@@ -325,10 +326,28 @@ const TeamStandingsPage: React.FC = () => {
               >
                 <Card className="overflow-hidden">
                   <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 text-white p-6">
-                    <h2 className="text-xl font-bold">Current Standings</h2>
-                    <p className="text-neutral-300 text-sm mt-1">
-                      Updated standings as of {new Date().toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-bold">Current Standings</h2>
+                        <p className="text-neutral-300 text-sm mt-1">
+                          Updated standings as of {new Date().toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-neutral-300" />
+                        <select
+                          value={selectedSeason || ""}
+                          onChange={(e) => setSelectedSeason(Number(e.target.value) || null)}
+                          className="bg-neutral-700 border border-neutral-600 rounded-lg px-4 py-2 text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                        >
+                          {seasons.map((season) => (
+                            <option key={season.id} value={season.id}>
+                              {season.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="overflow-x-auto">
