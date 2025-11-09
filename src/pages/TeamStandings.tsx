@@ -66,12 +66,18 @@ const TeamStandingsPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Fetching standings for season:', seasonId);
+      
       const response: TeamStandingsResponse = await get(
         `/team-standings${seasonId ? `?season_id=${seasonId}` : ''}`
       );
 
+      console.log('Standings response:', response);
+
       if (response.success) {
         setTeamStats(response.data);
+        console.log('Team stats updated:', response.data.length, 'teams');
       } else {
         setError("Failed to fetch team standings");
       }
@@ -93,7 +99,7 @@ const TeamStandingsPage: React.FC = () => {
 
   const fetchSeasons = async () => {
     try {
-      const response = await get("/seasons");
+      const response = await get("/seasons") as { success: boolean; data: Season[] };
       if (response.success) {
         setSeasons(response.data);
         // Find and set the active season
@@ -172,7 +178,7 @@ const TeamStandingsPage: React.FC = () => {
                     {error}
                   </p>
                   <button
-                    onClick={fetchTeamStandings}
+                    onClick={() => fetchTeamStandings(selectedSeason || undefined)}
                     className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                   >
                     Try Again
@@ -390,7 +396,27 @@ const TeamStandingsPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                        {teamStats.map((team, index) => {
+                        {loading ? (
+                          <tr>
+                            <td colSpan={11} className="px-6 py-12 text-center">
+                              <div className="flex flex-col items-center justify-center">
+                                <Loader2 className="w-8 h-8 animate-spin text-primary-500 mb-2" />
+                                <p className="text-neutral-600 dark:text-neutral-400">
+                                  Loading standings...
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : teamStats.length === 0 ? (
+                          <tr>
+                            <td colSpan={11} className="px-6 py-12 text-center">
+                              <p className="text-neutral-600 dark:text-neutral-400">
+                                No standings available for this season.
+                              </p>
+                            </td>
+                          </tr>
+                        ) : (
+                          teamStats.map((team, index) => {
                           const logo =
                             team.team_logo ||
                             teamLogos[team.team_name] ||
@@ -501,7 +527,8 @@ const TeamStandingsPage: React.FC = () => {
                               </td>
                             </motion.tr>
                           );
-                        })}
+                        })
+                        )}
                       </tbody>
                     </table>
                   </div>
