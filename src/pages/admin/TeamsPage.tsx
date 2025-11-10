@@ -4,7 +4,7 @@ import { Plus, Edit, Trash2, Search, X } from "lucide-react";
 import { Card, CardBody } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { get, post, put, del } from "../../api/baseApi";
+import { get, post, del } from "../../api/baseApi";
 import toast, { Toaster } from "react-hot-toast";
 
 interface Coach {
@@ -177,8 +177,9 @@ export const TeamsPage2: React.FC = () => {
 
       let response;
       if (editingTeam) {
-        // Use PUT for updates
-        response = await put<CreateTeamResponse>(
+        // Use POST with _method for updates (Laravel method spoofing for FormData)
+        formDataToSend.append('_method', 'PUT');
+        response = await post<CreateTeamResponse>(
           `/teams/${editingTeam.id}`,
           formDataToSend
         );
