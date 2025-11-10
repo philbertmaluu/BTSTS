@@ -14,6 +14,7 @@ import {
 import toast from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
 import { Button } from "../ui/Button";
+import { post } from "../../api/baseApi";
 
 interface MatchStats {
   // Final Scores
@@ -81,6 +82,12 @@ interface ScoringModalProps {
     venue: string;
   };
   onSaveMatch: (matchStats: MatchStats) => void;
+}
+
+interface UpdateFixtureResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
 }
 
 const initialStats: MatchStats = {
@@ -362,27 +369,53 @@ export const ScoringModal: React.FC<ScoringModalProps> = ({
     });
   };
 
-  const startGame = () => {
-    setGameStatus("In Progress");
-    setStats((prev) => ({
-      ...prev,
-      status: "In Progress",
-      game_start_time: new Date().toISOString(),
-    }));
-    toast.success("Game started! You can now begin scoring.");
+  const startGame = async () => {
+    try {
+      // Update fixture status to "In Progress" in the backend using dedicated endpoint
+      const response = await post<UpdateFixtureResponse>(`/fixtures/${match.id}/start-game`, {});
+
+      if (response.success) {
+        setGameStatus("In Progress");
+        setStats((prev) => ({
+          ...prev,
+          status: "In Progress",
+          game_start_time: new Date().toISOString(),
+        }));
+        toast.success("Game started! You can now begin scoring.");
+      } else {
+        toast.error(response.message || "Failed to start game");
+      }
+    } catch (error: any) {
+      console.error("Error starting game:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to start game. Please try again.";
+      toast.error(errorMessage);
+    }
   };
 
-  const endGame = () => {
-    setGameStatus("Completed");
-    const winner =
-      stats.home_team_score > stats.away_team_score ? "home" : "away";
-    setStats((prev) => ({
-      ...prev,
-      status: "Completed",
-      game_end_time: new Date().toISOString(),
-      winner,
-    }));
-    toast.success("Game ended!");
+  const endGame = async () => {
+    try {
+      // Update fixture status to "Completed" in the backend using dedicated endpoint
+      const response = await post<UpdateFixtureResponse>(`/fixtures/${match.id}/end-game`, {});
+
+      if (response.success) {
+        setGameStatus("Completed");
+        const winner =
+          stats.home_team_score > stats.away_team_score ? "home" : "away";
+        setStats((prev) => ({
+          ...prev,
+          status: "Completed",
+          game_end_time: new Date().toISOString(),
+          winner,
+        }));
+        toast.success("Game ended!");
+      } else {
+        toast.error(response.message || "Failed to end game");
+      }
+    } catch (error: any) {
+      console.error("Error ending game:", error);
+      const errorMessage = error?.response?.data?.message || "Failed to end game. Please try again.";
+      toast.error(errorMessage);
+    }
   };
 
   const saveMatch = async () => {
