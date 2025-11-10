@@ -729,7 +729,7 @@ export const FixturesPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center space-x-2">
-                          {fixture.status !== "Cancelled" && fixture.status !== "Completed" && (
+                          {fixture.status !== "Cancelled" && fixture.status !== "Completed" && fixture.status !== "In Progress" && (
                             <Button
                               variant="outline"
                               size="sm"
