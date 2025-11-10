@@ -334,7 +334,7 @@ const TeamStandingsPage: React.FC = () => {
                   <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 text-white p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-xl font-bold">Current Standings</h2>
+                        <h2 className="text-xl font-bold">Standings</h2>
                         <p className="text-neutral-300 text-sm mt-1">
                           Updated standings as of {new Date().toLocaleDateString()}
                         </p>

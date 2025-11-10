@@ -368,9 +368,9 @@ export const ProfilePage: React.FC = () => {
                           profile.name.charAt(0).toUpperCase()
                         )}
                       </div>
-                      <button className="absolute bottom-0 right-0 w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-primary-600 transition-colors">
+                      {/* <button className="absolute bottom-0 right-0 w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-primary-600 transition-colors">
                         <Camera size={16} />
-                      </button>
+                      </button> */}
                     </div>
 
                     {/* Name and Status */}
