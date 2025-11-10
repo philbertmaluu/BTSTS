@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, Search, X } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, Ban } from "lucide-react";
 import { Card, CardBody } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -423,6 +423,24 @@ export const FixturesPage: React.FC = () => {
     }
   };
 
+  const handleCancelFixture = async (fixtureId: number) => {
+    if (window.confirm("Are you sure you want to cancel this fixture?")) {
+      try {
+        const response = await post<CreateFixtureResponse>(`/fixtures/${fixtureId}/cancel`, {});
+        if (response.success) {
+          await fetchFixtures();
+          toast.success("Fixture cancelled successfully");
+        } else {
+          toast.error(response.message || "Failed to cancel fixture");
+        }
+      } catch (error: any) {
+        console.error("Error cancelling fixture:", error);
+        const errorMessage = error?.response?.data?.message || "Failed to cancel fixture";
+        toast.error(errorMessage);
+      }
+    }
+  };
+
   const handleDeleteFixture = async (fixtureId: number) => {
     if (window.confirm("Are you sure you want to delete this fixture?")) {
       try {
@@ -711,20 +729,33 @@ export const FixturesPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditModal(fixture)}
-                            leftIcon={<Edit size={14} />}
-                          >
-                            Edit
-                          </Button>
+                          {fixture.status !== "Cancelled" && fixture.status !== "Completed" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditModal(fixture)}
+                              leftIcon={<Edit size={14} />}
+                            >
+                              Edit
+                            </Button>
+                          )}
+                          {fixture.status === "Scheduled" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelFixture(fixture.id)}
+                              leftIcon={<Ban size={14} />}
+                              className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                            >
+                              Cancel
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeleteFixture(fixture.id)}
                             leftIcon={<Trash2 size={14} />}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                           >
                             Delete
                           </Button>
