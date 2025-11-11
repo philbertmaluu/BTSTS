@@ -6,7 +6,6 @@ import {
   Mail,
   Phone,
   LogOut,
-  RefreshCw,
   AlertCircle,
   CheckCircle,
   XCircle,
@@ -46,17 +45,6 @@ export const AccountInactive: React.FC = () => {
   const handleLogout = () => {
     logout();
     toast.success("Logged out successfully");
-  };
-
-  const handleRefresh = () => {
-    // In real app, this would check the account status from API
-    toast.success("Checking account status...");
-    // You could implement a polling mechanism here
-  };
-
-  const handleContactSupport = () => {
-    // In real app, this would open contact form or redirect to support
-    toast.success("Redirecting to support...");
   };
 
   const getStatusInfo = (status: string) => {
@@ -266,35 +254,17 @@ export const AccountInactive: React.FC = () => {
                   </div>
                 </motion.div>
 
-                {/* Action Buttons */}
+                {/* Logout Button */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.5 }}
-                  className="flex flex-col sm:flex-row gap-4"
+                  className="flex justify-center"
                 >
-                  <Button
-                    onClick={handleRefresh}
-                    variant="outline"
-                    className="flex-1"
-                    leftIcon={<RefreshCw size={16} />}
-                  >
-                    Check Status
-                  </Button>
-
-                  <Button
-                    onClick={handleContactSupport}
-                    variant="outline"
-                    className="flex-1"
-                    leftIcon={<Mail size={16} />}
-                  >
-                    Contact Support
-                  </Button>
-
                   <Button
                     onClick={handleLogout}
                     variant="outline"
-                    className="flex-1"
+                    className="w-full sm:w-auto"
                     leftIcon={<LogOut size={16} />}
                   >
                     Sign Out
