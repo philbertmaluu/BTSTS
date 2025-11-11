@@ -9,6 +9,7 @@ import {
   Play,
   ChevronDown,
   ChevronUp,
+  Award,
 } from "lucide-react";
 import { Card, CardHeader, CardBody } from "../components/ui/Card";
 import { StatsCard } from "../components/stats/StatsCard";
@@ -793,123 +794,135 @@ export const DashboardPage: React.FC = () => {
     </div>
   );
 
-  const DefaultDashboard = () => (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* <StatsCard
-              title="Total Fixtures"
-              value={matches.length.toString()}
-              icon={<Clipboard size={24} />}
-              index={0}
-            />
-            <StatsCard
-              title="Completed Matches"
-              value={matches
-                .filter((m) => m.status === "completed")
-                .length.toString()}
-              icon={<TrendingUp size={24} />}
-              index={1}
-            />
-            <StatsCard
-              title="Scheduled Matches"
-              value={matches
-                .filter((m) => m.status === "scheduled")
-                .length.toString()}
-              icon={<Award size={24} />}
-              index={2}
-            />
-            <StatsCard
-              title="Next Match"
-              value={
-                matches.filter((m) => m.status === "scheduled").length > 0
-                  ? "Available"
-                  : "None"
-              }
-              icon={<Calendar size={24} />}
-              index={3}
-            /> */}
-          </div>
+  const DefaultDashboard = () => {
+    const [dashboardStats, setDashboardStats] = useState<any>(null);
+    const [statsLoading, setStatsLoading] = useState(true);
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <motion.div
-              className="lg:col-span-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              {/* <Card className="h-full">
-                <CardHeader className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-                    Team Performance
-                  </h2>
-                  <div className="flex space-x-2">
-                    <button className="text-sm font-medium text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
-                      Week
-                    </button>
-                    <button className="text-sm font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300">
-                      Month
-                    </button>
-                    <button className="text-sm font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300">
-                      Year
-                    </button>
-                  </div>
-                </CardHeader>
-                <CardBody>
-                  <div className="w-full h-64 flex items-center justify-center">
-                    <LineChart
-                      size={48}
-                      className="text-neutral-300 dark:text-neutral-700"
-                    />
-                    <p className="ml-4 text-neutral-500 dark:text-neutral-400">
-                      Performance chart visualization would appear here.
-                    </p>
-                  </div>
-                </CardBody>
-              </Card> */}
-            </motion.div>
+    useEffect(() => {
+      fetchDashboardStats();
+    }, []);
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              {/* <Card className="h-full">
-                <CardHeader>
-                  <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-                    Recent Activities
-                  </h2>
-                </CardHeader>
-                <CardBody>
+    const fetchDashboardStats = async () => {
+      try {
+        setStatsLoading(true);
+        const response = await get("/dashboard/stats") as { success: boolean; data: any };
+        if (response.success) {
+          setDashboardStats(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    };
+
+    if (statsLoading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatsCard
+            title="Total Fixtures"
+            value={dashboardStats?.statistics?.total_fixtures?.toString() || "0"}
+            icon={<Clipboard size={24} />}
+            index={0}
+          />
+          <StatsCard
+            title="Completed Matches"
+            value={dashboardStats?.statistics?.completed_matches?.toString() || "0"}
+            icon={<TrendingUp size={24} />}
+            index={1}
+          />
+          <StatsCard
+            title="Scheduled Matches"
+            value={dashboardStats?.statistics?.scheduled_matches?.toString() || "0"}
+            icon={<Award size={24} />}
+            index={2}
+          />
+          <StatsCard
+            title="Next Match"
+            value={
+              dashboardStats?.next_match
+                ? `${dashboardStats.next_match.home_team.name} vs ${dashboardStats.next_match.away_team.name}`
+                : "None"
+            }
+            icon={<Calendar size={24} />}
+            index={3}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="h-full">
+              <CardHeader>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                  Recent Fixtures
+                </h2>
+              </CardHeader>
+              <CardBody>
+                {dashboardStats?.recent_fixtures?.length > 0 ? (
                   <ul className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                    {[1, 2, 3, 4].map((item) => (
-                      <li key={item} className="py-3">
-                        <div className="flex items-start">
-                          <div className="mr-3 mt-1">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
-                              <Clock size={16} className="text-primary-500" />
-                            </span>
-                          </div>
-                          <div>
+                    {dashboardStats.recent_fixtures.map((fixture: any) => (
+                      <li key={fixture.id} className="py-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
                             <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                              New game stats added
+                              {fixture.home_team.name} vs {fixture.away_team.name}
                             </p>
                             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                              Lakers vs. Celtics - May 10, 2025
+                              {fixture.venue.name} - {formatDate(fixture.fixture_date)} at {fixture.fixture_time}
                             </p>
                           </div>
-                          <span className="ml-auto text-xs text-neutral-500 dark:text-neutral-400">
-                            2h ago
-                          </span>
+                          <div className="ml-4">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                fixture.status === "Completed"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                  : fixture.status === "In Progress"
+                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                                  : fixture.status === "Scheduled"
+                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+                              }`}
+                            >
+                              {fixture.status}
+                            </span>
+                          </div>
                         </div>
                       </li>
                     ))}
                   </ul>
-                </CardBody>
-              </Card> */}
-            </motion.div>
-          </div>
-        </>
-  );
+                ) : (
+                  <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+                    No recent fixtures available
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          </motion.div>
+        </div>
+      </>
+    );
+  };
 
   return (
     <motion.div
