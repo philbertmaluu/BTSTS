@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, AlertCircle, ArrowLeft, Home } from "lucide-react";
+import { Mail, Lock, AlertCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
@@ -87,42 +87,33 @@ export const LoginForm: React.FC = () => {
         }}
       />
 
-      <div className="min-h-screen flex bg-neutral-50 dark:bg-neutral-900 relative overflow-hidden">
-        {/* Background Decorative Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,165,0,0.1),transparent_50%)]" />
-          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_80%,rgba(255,165,0,0.08),transparent_50%)]" />
-        </div>
-
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-900 relative">
         {/* Back to Home Button - Top Left */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="absolute top-6 left-6 z-10"
+          className="absolute top-6 left-6 z-50"
         >
           <Link
             to="/"
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-400 hover:border-primary-500 dark:hover:border-primary-400 transition-all shadow-sm hover:shadow-md"
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-400 hover:border-primary-500 dark:hover:border-primary-400 transition-all shadow-sm hover:shadow-md"
           >
             <ArrowLeft size={18} />
             <span className="font-medium">Back to Home</span>
           </Link>
         </motion.div>
 
-    
-        
-
-        {/* Right Side - Login Form */}
-        <div className="w-full flex items-center justify-center px-4 py-12 relative z-10">
+        {/* Login Form */}
+        <div className="w-full max-w-md px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-full max-w-md"
+            transition={{ duration: 0.5 }}
+            className="w-full"
           >
-            {/* Mobile Logo */}
-            <div className="lg:hidden text-center mb-8">
+            {/* Logo */}
+            <div className="text-center mb-8">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
