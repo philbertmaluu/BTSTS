@@ -37,6 +37,7 @@ interface Fixture {
   status: "Scheduled" | "In Progress" | "Completed" | "Cancelled";
   season_id: number;
   statistician_id?: number;
+  statisticians?: Statistician[];
   created_at: string;
   updated_at: string;
 }
@@ -457,6 +458,9 @@ export const FixturesPage: React.FC = () => {
   const openEditModal = (fixture: Fixture) => {
     setEditingFixture(fixture);
     const scheduledDate = new Date(fixture.fixture_date);
+    const statisticianId = fixture.statisticians && fixture.statisticians.length > 0 
+      ? fixture.statisticians[0].id 
+      : "";
     setFormData({
       home_team_id: fixture.home_team_id,
       away_team_id: fixture.away_team_id,
@@ -464,7 +468,7 @@ export const FixturesPage: React.FC = () => {
       fixture_time: scheduledDate.toTimeString().substring(0, 5), // Format as HH:MM
       venue_id: fixture.venue_id,
       season_id: fixture.season_id,
-      statician_id: fixture.statistician_id || "",
+      statician_id: statisticianId,
     });
     setShowAddModal(true);
   };
@@ -630,6 +634,9 @@ export const FixturesPage: React.FC = () => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Venue
                     </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                      Statistician
+                    </th>
                     <th className="px-6 py-4 text-center text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                       Status
                     </th>
@@ -716,6 +723,24 @@ export const FixturesPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-neutral-900 dark:text-white">
                           {fixture.venue.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm">
+                          {fixture.statisticians && fixture.statisticians.length > 0 ? (
+                            <div>
+                              <div className="text-neutral-900 dark:text-white font-medium">
+                                {fixture.statisticians[0].name}
+                              </div>
+                              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                                {fixture.statisticians[0].email}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-neutral-500 dark:text-neutral-400 italic text-xs">
+                              Not assigned
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
