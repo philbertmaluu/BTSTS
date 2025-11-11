@@ -173,8 +173,13 @@ export const DashboardPage: React.FC = () => {
         matchResultsMap.set(result.fixture_id, result);
       });
 
+      // Filter out cancelled fixtures - only show Scheduled, In Progress, and Completed
+      const activeFixtures = fixtures.filter(
+        (fixture) => fixture.status !== "Cancelled"
+      );
+
       // Transform fixtures to matches format
-      const transformedMatches: Match[] = fixtures.map((fixture) => {
+      const transformedMatches: Match[] = activeFixtures.map((fixture) => {
         // Handle date and time construction more robustly
         let startTime = "";
         try {
@@ -195,6 +200,16 @@ export const DashboardPage: React.FC = () => {
         // Get match result if exists
         const matchResult = matchResultsMap.get(fixture.id);
 
+        // Map fixture status to match status
+        let matchStatus: "scheduled" | "live" | "completed";
+        if (fixture.status === "In Progress") {
+          matchStatus = "live";
+        } else if (fixture.status === "Completed") {
+          matchStatus = "completed";
+        } else {
+          matchStatus = "scheduled";
+        }
+
         return {
           id: fixture.id.toString(),
           homeTeam: {
@@ -207,10 +222,7 @@ export const DashboardPage: React.FC = () => {
             score: matchResult?.away_team_score || 0,
             logo: fixture.away_team.logo_url || "",
           },
-          status: fixture.status.toLowerCase() as
-            | "scheduled"
-            | "live"
-            | "completed",
+          status: matchStatus,
           startTime,
           venue: typeof fixture.venue === 'string' ? fixture.venue : fixture.venue?.name || '',
           matchResult,
