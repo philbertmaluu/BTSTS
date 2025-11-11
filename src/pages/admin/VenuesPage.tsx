@@ -56,9 +56,21 @@ export const VenuesPage: React.FC = () => {
         await deleteVenue(venueId);
         await fetchVenues();
         toast.success("Venue deleted successfully");
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error deleting venue:", error);
-        toast.error("Failed to delete venue");
+        
+        // Extract error message from API response
+        if (error && typeof error === "object" && "response" in error) {
+          const apiError = error as {
+            response?: {
+              data?: { message?: string };
+            };
+          };
+          const errorMessage = apiError.response?.data?.message || "Failed to delete venue";
+          toast.error(errorMessage);
+        } else {
+          toast.error("Failed to delete venue");
+        }
       }
     }
   };
@@ -329,15 +341,22 @@ export const VenuesPage: React.FC = () => {
                           >
                             Edit
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteVenue(venue.id)}
-                            leftIcon={<Trash2 size={14} />}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            Delete
-                          </Button>
+                          {(!venue.fixtures_count || venue.fixtures_count === 0) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteVenue(venue.id)}
+                              leftIcon={<Trash2 size={14} />}
+                              className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              Delete
+                            </Button>
+                          )}
+                          {venue.fixtures_count && venue.fixtures_count > 0 && (
+                            <span className="text-xs text-neutral-500 dark:text-neutral-400 italic">
+                              Used in {venue.fixtures_count} fixture{venue.fixtures_count > 1 ? 's' : ''}
+                            </span>
+                          )}
                         </div>
                       </td>
                     </motion.tr>

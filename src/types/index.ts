@@ -21,6 +21,7 @@ export interface Venue {
   capacity: number;
   created_at: string;
   updated_at: string;
+  fixtures_count?: number;
 }
 
 // Player types
